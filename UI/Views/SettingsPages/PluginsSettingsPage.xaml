@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="StreamWeaver.UI.Views.SettingsPages.PluginsSettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:StreamWeaver.UI.Views.SettingsPages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:viewmodels="using:StreamWeaver.UI.ViewModels"
+    xmlns:plugins="using:StreamWeaver.Core.Plugins"
+    xmlns:converters="using:StreamWeaver.UI.Converters"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance Type=viewmodels:SettingsViewModel, IsDesignTimeCreatable=False}"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Page.Resources>
+        <converters:IntToVisibilityConverter x:Key="IntToVisibilityConverter"/>
+    </Page.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  Padding="20">
+        <StackPanel Spacing="15">
+            <TextBlock Text="Loaded Plugins"
+                       Style="{ThemeResource SubtitleTextBlockStyle}"/>
+            <TextBlock Text="Displays information about successfully loaded plugins."
+                       TextWrapping="Wrap"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       Margin="0,0,0,10"/>
+
+            <ListView ItemsSource="{Binding LoadedPlugins}"
+                      SelectionMode="None">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="Padding"
+                                Value="10,8"/>
+                        <Setter Property="MinHeight"
+                                Value="0"/>
+                        <Setter Property="HorizontalContentAlignment"
+                                Value="Stretch"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="plugins:IPlugin">
+                        <Grid ColumnSpacing="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0"
+                                        VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Name}"
+                                           FontWeight="SemiBold"/>
+                                <TextBlock Text="{Binding Author}"
+                                           FontSize="11"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Margin="0,1,0,0"/>
+                            </StackPanel>
+
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding Version}"
+                                       VerticalAlignment="Center"
+                                       Margin="10,0"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+                <ListView.Footer>
+                    <TextBlock Text="No plugins loaded or found."
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               FontStyle="Italic"
+                               Margin="10,5"
+                               Visibility="{Binding LoadedPlugins.Count, Converter={StaticResource IntToVisibilityConverter}, ConverterParameter=Invert}"/>
+                </ListView.Footer>
+            </ListView>
+
+            <TextBlock FontSize="11"
+                       FontStyle="Italic"
+                       Foreground="{ThemeResource TextFillColorTertiaryBrush}">
+                Plugins are loaded from subdirectories within the 'Plugins' folder next to StreamWeaver.exe at startup. Each plugin requires a manifest.json file. Restart StreamWeaver to load new or updated plugins.
+            </TextBlock>
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

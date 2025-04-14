@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="StreamWeaver.UI.Views.SettingsView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:StreamWeaver.UI.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:viewmodels="using:StreamWeaver.UI.ViewModels"
+    xmlns:pages="using:StreamWeaver.UI.Views.SettingsPages"
+    xmlns:selectors="using:StreamWeaver.UI.Selectors"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance Type=viewmodels:SettingsViewModel, IsDesignTimeCreatable=False}">
+
+    <Page.Resources>
+        <Style x:Key="SettingsListBoxItemStyle"
+               TargetType="ListBoxItem">
+            <Setter Property="Padding"
+                    Value="12,8"/>
+            <Setter Property="HorizontalContentAlignment"
+                    Value="Stretch"/>
+        </Style>
+
+        <DataTemplate x:Key="CredentialsSectionTemplate">
+            <pages:CredentialsSettingsPage/>
+        </DataTemplate>
+
+        <DataTemplate x:Key="AccountsSectionTemplate">
+            <pages:AccountsSettingsPage/>
+        </DataTemplate>
+
+        <DataTemplate x:Key="OverlaysSectionTemplate">
+            <pages:OverlaysSettingsPage/>
+        </DataTemplate>
+
+        <DataTemplate x:Key="TTSSectionTemplate">
+            <pages:TtsSettingsPage/>
+        </DataTemplate>
+
+        <DataTemplate x:Key="ModulesSectionTemplate">
+            <pages:ModulesSettingsPage/>
+        </DataTemplate>
+
+        <DataTemplate x:Key="PluginsSectionTemplate">
+            <pages:PluginsSettingsPage/>
+        </DataTemplate>
+
+        <DataTemplate x:Key="SettingsNavigationViewItemTemplate"
+                      x:DataType="viewmodels:SettingsSection">
+            <StackPanel Orientation="Horizontal"
+                        Spacing="12">
+                <FontIcon Glyph="{Binding Glyph}"
+                          FontSize="16"/>
+                <TextBlock Text="{Binding Name}"/>
+            </StackPanel>
+        </DataTemplate>
+    </Page.Resources>
+
+    <Grid x:Name="LayoutRoot"
+          Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <NavigationView Grid.Row="0"
+                        x:Name="SettingsNavView"
+                        PaneDisplayMode="Left"
+                        IsBackButtonVisible="Collapsed"
+                        IsSettingsVisible="False"
+                        IsPaneToggleButtonVisible="False"
+                        MenuItemsSource="{Binding SettingsSections}"
+                        SelectedItem="{Binding SelectedSection, Mode=TwoWay}"
+                        MenuItemTemplate="{StaticResource SettingsNavigationViewItemTemplate}"
+                        SelectionChanged="SettingsNavView_SelectionChanged">
+
+            <NavigationView.PaneHeader>
+                <TextBlock Text="Settings"
+                           Style="{StaticResource SubtitleTextBlockStyle}"
+                           Margin="12,12,0,12"
+                           VerticalAlignment="Center"/>
+            </NavigationView.PaneHeader>
+
+            <Frame x:Name="SettingsContentFrame">
+                <Frame.ContentTransitions>
+                    <TransitionCollection>
+                        <NavigationThemeTransition/>
+                    </TransitionCollection>
+                </Frame.ContentTransitions>
+            </Frame>
+
+        </NavigationView>
+
+        <Border Grid.Row="1"
+                BorderThickness="0,1,0,0"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                Padding="20,10">
+            <Button Content="Save Settings"
+                    Command="{Binding SaveSettingsCommand}"
+                    HorizontalAlignment="Left"
+                    Style="{StaticResource AccentButtonStyle}"/>
+        </Border>
+    </Grid>
+</Page>

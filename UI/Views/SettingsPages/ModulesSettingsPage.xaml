@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="StreamWeaver.UI.Views.SettingsPages.ModulesSettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:StreamWeaver.UI.Views.SettingsPages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:viewmodels="using:StreamWeaver.UI.ViewModels"
+    xmlns:converters="using:StreamWeaver.UI.Converters"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance Type=viewmodels:SettingsViewModel, IsDesignTimeCreatable=False}"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Page.Resources>
+        <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter"/>
+        <StaticResource x:Key="DecimalFormatter"
+                        ResourceKey="DecimalFormatter"/>
+        <StaticResource x:Key="IntegerFormatter"
+                        ResourceKey="IntegerFormatter"/>
+    </Page.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  Padding="20">
+        <StackPanel Spacing="15">
+            <TextBlock Text="Modules"
+                       Style="{ThemeResource SubtitleTextBlockStyle}"/>
+            <TextBlock Text="Configure optional built-in modules like the Subathon Timer and Goal Tracker."
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,10"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+
+            <!-- Subathon Timer Expander -->
+            <Expander Header="Subathon Timer"
+                      IsExpanded="False">
+                <StackPanel Spacing="10"
+                            Margin="24,10,0,0">
+                    <ToggleSwitch Header="Enable Subathon Timer Module"
+                                  IsOn="{Binding ModuleSettings.Subathon.Enabled, Mode=TwoWay}">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Enable or disable the subathon timer functionality and overlay."/>
+                        </ToolTipService.ToolTip>
+                    </ToggleSwitch>
+                    <!-- Sub-panel gets slightly transparent when main toggle is off -->
+                    <StackPanel Spacing="10"
+                                Opacity="{Binding ModuleSettings.Subathon.Enabled, Converter={StaticResource BoolToOpacityConverter}}">
+                        <TextBlock Text="Timer Setup"
+                                   Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                        <TextBlock Text="Configure the starting duration and maximum length of the timer."
+                                   FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   Margin="0,-5,0,5"/>
+                        <NumberBox Header="Initial Duration (Minutes)"
+                                   Minimum="0"
+                                   SpinButtonPlacementMode="Inline"
+                                   SmallChange="1"
+                                   LargeChange="10"
+                                   Value="{Binding ModuleSettings.Subathon.InitialDurationMinutes, Mode=TwoWay}"
+                                   NumberFormatter="{StaticResource IntegerFormatter}"
+                                   IsEnabled="{Binding ModuleSettings.Subathon.Enabled}">
+                            <ToolTipService.ToolTip>
+                                <ToolTip Content="The timer's starting duration when the module is first enabled or reset."/>
+                            </ToolTipService.ToolTip>
+                        </NumberBox>
+                        <NumberBox Header="Maximum Duration Cap (Minutes, 0 for No Cap)"
+                                   Minimum="0"
+                                   SpinButtonPlacementMode="Inline"
+                                   SmallChange="10"
+                                   LargeChange="60"
+                                   Value="{Binding ModuleSettings.Subathon.MaximumDurationMinutes, Mode=TwoWay}"
+                                   NumberFormatter="{StaticResource IntegerFormatter}"
+                                   IsEnabled="{Binding ModuleSettings.Subathon.Enabled}">
+                            <ToolTipService.ToolTip>
+                                <ToolTip Content="The maximum time the timer can reach. Set to 0 for no limit."/>
+                            </ToolTipService.ToolTip>
+                        </NumberBox>
+                        <TextBlock Text="Time Added Per Event"
+                                   Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                   Margin="0,15,0,0"/>
+                        <TextBlock Text="Configure how much time is added for different events."
+                                   FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   Margin="0,-5,0,5"/>
+                        <ToggleSwitch Header="Add Time for Subscriptions/Resubs/Gifts"
+                                      Margin="0,5,0,0"
+                                      IsOn="{Binding ModuleSettings.Subathon.AddTimeForSubs, Mode=TwoWay}"
+                                      IsEnabled="{Binding ModuleSettings.Subathon.Enabled}">
+                            <ToolTipService.ToolTip>
+                                <ToolTip Content="Enable adding time for Twitch subscriptions and gifts."/>
+                            </ToolTipService.ToolTip>
+                        </ToggleSwitch>
+                        <StackPanel Margin="20,5,0,10"
+                                    Spacing="5"
+                                    Opacity="{Binding ModuleSettings.Subathon.IsSubConfigEnabled, Converter={StaticResource BoolToOpacityConverter}}">
+                            <NumberBox Header="Seconds per Tier 1 / Prime Sub"
+                                       Minimum="0"
+                                       Value="{Binding ModuleSettings.Subathon.SecondsPerSubTier1, Mode=TwoWay}"
+                                       SpinButtonPlacementMode="Inline"
+                                       SmallChange="1"
+                                       NumberFormatter="{StaticResource IntegerFormatter}"
+                                       IsEnabled="{Binding ModuleSettings.Subathon.IsSubConfigEnabled}"/>
+                            <NumberBox Header="Seconds per Tier 2 Sub"
+                                       Minimum="0"
+                                       Value="{Binding ModuleSettings.Subathon.SecondsPerSubTier2, Mode=TwoWay}"
+                                       SpinButtonPlacementMode="Inline"
+                                       SmallChange="1"
+                                       NumberFormatter="{StaticResource IntegerFormatter}"
+                                       IsEnabled="{Binding ModuleSettings.Subathon.IsSubConfigEnabled}"/>
+                            <NumberBox Header="Seconds per Tier 3 Sub"
+                                       Minimum="0"
+                                       Value="{Binding ModuleSettings.Subathon.SecondsPerSubTier3, Mode=TwoWay}"
+                                       SpinButtonPlacementMode="Inline"
+                                       SmallChange="1"
+                                       NumberFormatter="{StaticResource IntegerFormatter}"
+                                       IsEnabled="{Binding ModuleSettings.Subathon.IsSubConfigEnabled}"/>
+                            <NumberBox Header="Seconds per Gifted Sub (Each)"
+                                       Minimum="0"
+                                       Value="{Binding ModuleSettings.Subathon.SecondsPerGiftSub, Mode=TwoWay}"
+                                       SpinButtonPlacementMode="Inline"
+                                       SmallChange="1"
+                                       NumberFormatter="{StaticResource IntegerFormatter}"
+                                       IsEnabled="{Binding ModuleSettings.Subathon.IsSubConfigEnabled}"/>
+                        </StackPanel>
+                        <ToggleSwitch Header="Add Time for Bits/Cheers"
+                                      Margin="0,5,0,0"
+                                      IsOn="{Binding ModuleSettings.Subathon.AddTimeForBits, Mode=TwoWay}"
+                                      IsEnabled="{Binding ModuleSettings.Subathon.Enabled}">
+                            <ToolTipService.ToolTip>
+                                <ToolTip Content="Enable adding time for Twitch Bits/Cheers."/>
+                            </ToolTipService.ToolTip>
+                        </ToggleSwitch>
+                        <StackPanel Margin="20,5,0,10"
+                                    Spacing="5"
+                                    Opacity="{Binding ModuleSettings.Subathon.IsBitsConfigEnabled, Converter={StaticResource BoolToOpacityConverter}}">
+                            <NumberBox Header="Bits Required to Add 1 Second"
+                                       Minimum="1"
+                                       Value="{Binding ModuleSettings.Subathon.BitsPerSecond, Mode=TwoWay}"
+                                       SpinButtonPlacementMode="Inline"
+                                       SmallChange="1"
+                                       NumberFormatter="{StaticResource IntegerFormatter}"
+                                       IsEnabled="{Binding ModuleSettings.Subathon.IsBitsConfigEnabled}"/>
+                        </StackPanel>
+                        <ToggleSwitch Header="Add Time for Donations / Super Chats"
+                                      Margin="0,5,0,0"
+                                      IsOn="{Binding ModuleSettings.Subathon.AddTimeForDonations, Mode=TwoWay}"
+                                      IsEnabled="{Binding ModuleSettings.Subathon.Enabled}">
+                            <ToolTipService.ToolTip>
+                                <ToolTip Content="Enable adding time for Streamlabs donations and YouTube Super Chats."/>
+                            </ToolTipService.ToolTip>
+                        </ToggleSwitch>
+                        <StackPanel Margin="20,5,0,10"
+                                    Spacing="5"
+                                    Opacity="{Binding ModuleSettings.Subathon.IsDonationConfigEnabled, Converter={StaticResource BoolToOpacityConverter}}">
+                            <NumberBox Header="Amount Required to Add 1 Second"
+                                       Minimum="0.01"
+                                       Value="{Binding ModuleSettings.Subathon.AmountPerSecond, Mode=TwoWay}"
+                                       SpinButtonPlacementMode="Inline"
+                                       SmallChange="0.01"
+                                       LargeChange="0.1"
+                                       NumberFormatter="{StaticResource DecimalFormatter}"
+                                       IsEnabled="{Binding ModuleSettings.Subathon.IsDonationConfigEnabled}"/>
+                            <TextBox Header="Assumed Currency for Calculation (e.g., USD)"
+                                     Text="{Binding ModuleSettings.Subathon.DonationCurrencyAssumption, Mode=TwoWay}"
+                                     IsEnabled="{Binding ModuleSettings.Subathon.IsDonationConfigEnabled}">
+                                <ToolTipService.ToolTip>
+                                    <ToolTip Content="The currency code (e.g., USD, EUR, JPY) used when comparing donation amounts to the 'Amount Required' setting. Does not perform live conversion."/>
+                                </ToolTipService.ToolTip>
+                            </TextBox>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Expander>
+            <!-- Goal Module Expander -->
+            <Expander Header="Goal Tracker"
+                      IsExpanded="False">
+                <TextBlock Text="Goal Tracker settings will go here..."
+                           Margin="24,5,0,0"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           FontStyle="Italic"/>
+                <!-- TODO: Add Goal settings bindings based on GoalSettings model -->
+            </Expander>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

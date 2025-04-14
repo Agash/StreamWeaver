@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+        x:Class="StreamWeaver.UI.Views.ConnectAccountDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:StreamWeaver.UI.Views"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        xmlns:viewmodels="using:StreamWeaver.UI.ViewModels"
+        d:DataContext="{d:DesignInstance Type=viewmodels:ConnectAccountViewModel}"
+        Title="Connect Account"
+        PrimaryButtonText="Connect"
+        CloseButtonText="Cancel"
+        DefaultButton="Primary"
+        PrimaryButtonClick="ContentDialog_PrimaryButtonClick"
+        CloseButtonClick="ContentDialog_CloseButtonClick">
+
+        <StackPanel Spacing="10">
+                <TextBlock Text="{Binding DialogTitle}"
+                           Style="{StaticResource BaseTextBlockStyle}"
+                           Margin="0,0,0,10"/>
+                <TextBlock Text="{Binding Description}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,10"/>
+
+                <StackPanel Visibility="{Binding IsStreamlabs, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <TextBlock Text="Streamlabs requires a Socket API Token."/>
+                        <PasswordBox Header="Streamlabs Socket API Token"
+                                     Password="{Binding StreamlabsToken, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                        <HyperlinkButton Content="Where do I find this?"
+                                         NavigateUri="https://streamlabs.com/dashboard#/settings/api-settings"/>
+                </StackPanel>
+
+                <InfoBar Title="Authentication Note"
+                         Severity="Informational"
+                         Message="For Twitch and YouTube, clicking 'Connect' will open your web browser for secure authentication."
+                         IsOpen="{Binding IsOAuthPlatform}"/>
+
+                <InfoBar Title="Error"
+                         Severity="Error"
+                         Message="{Binding ErrorMessage}"
+                         IsOpen="{Binding HasError}"
+                         Margin="0,10,0,0"/>
+
+        </StackPanel>
+</ContentDialog>

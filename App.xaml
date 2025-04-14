@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Application
+    x:Class="StreamWeaver.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:xamlNumerics="using:Windows.Globalization.NumberFormatting"
+    xmlns:local="using:StreamWeaver">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls"/>
+            </ResourceDictionary.MergedDictionaries>
+            <xamlNumerics:DecimalFormatter x:Key="DecimalFormatter"
+                                           IsDecimalPointAlwaysDisplayed="False"
+                                           IsGrouped="False"
+                                           FractionDigits="2"/>
+
+            <xamlNumerics:DecimalFormatter x:Key="IntegerFormatter"
+                                           IsDecimalPointAlwaysDisplayed="False"
+                                           IsGrouped="False"
+                                           FractionDigits="0"/>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

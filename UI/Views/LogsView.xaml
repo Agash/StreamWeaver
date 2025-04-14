@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="StreamWeaver.UI.Views.LogsView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:viewmodels="using:StreamWeaver.UI.ViewModels"
+    xmlns:models="using:StreamWeaver.Core.Models"
+    xmlns:converters="using:StreamWeaver.UI.Converters"
+    xmlns:logging="using:Microsoft.Extensions.Logging"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance Type=viewmodels:LogsViewModel, IsDesignTimeCreatable=False}"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    Loaded="Page_Loaded"
+    Unloaded="Page_Unloaded">
+
+    <Page.Resources>
+        <!-- Converters -->
+        <converters:LogLevelToSymbolConverter x:Key="LogLevelToSymbolConverter"/>
+        <converters:LogLevelToBrushConverter x:Key="LogLevelToBrushConverter"/>
+        <converters:DateTimeFormatConverter x:Key="DateTimeFormatConverter"/>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Filter Controls -->
+        <StackPanel Grid.Row="0"
+                    Orientation="Horizontal"
+                    Spacing="10"
+                    Padding="10">
+            <TextBlock Text="Show Levels:"
+                       VerticalAlignment="Center"/>
+            <CheckBox Content="Debug"
+                      IsChecked="{Binding ShowDebug, Mode=TwoWay}"
+                      VerticalAlignment="Center"/>
+            <CheckBox Content="Info"
+                      IsChecked="{Binding ShowInfo, Mode=TwoWay}"
+                      VerticalAlignment="Center"/>
+            <CheckBox Content="Warn"
+                      IsChecked="{Binding ShowWarn, Mode=TwoWay}"
+                      VerticalAlignment="Center"/>
+            <CheckBox Content="Error"
+                      IsChecked="{Binding ShowError, Mode=TwoWay}"
+                      VerticalAlignment="Center"/>
+            <Button Content="Clear Logs"
+                    Command="{Binding ClearLogsCommand}"
+                    Margin="20,0,0,0"/>
+        </StackPanel>
+
+        <!-- Log List -->
+        <ListView
+            x:Name="LogsListView"
+            Grid.Row="1"
+            ItemsSource="{Binding FilteredLogEntries}"
+            SelectionMode="None"
+            IsItemClickEnabled="False"
+            HorizontalContentAlignment="Stretch"
+            ScrollViewer.VerticalScrollBarVisibility="Auto"
+            ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="models:LogEntry">
+                    <Grid Padding="4,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <!-- Timestamp -->
+                            <ColumnDefinition Width="Auto"/>
+                            <!-- Level Icon -->
+                            <ColumnDefinition Width="Auto"/>
+                            <!-- Category -->
+                            <ColumnDefinition Width="*"/>
+                            <!-- Message -->
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0"
+                                   Text="{Binding Timestamp, Converter={StaticResource DateTimeFormatConverter}, ConverterParameter='HH:mm:ss.fff'}"
+                                   FontSize="11"
+                                   VerticalAlignment="Top"
+                                   Margin="0,1,8,0"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+
+                        <FontIcon Grid.Column="1"
+                                  Glyph="{Binding Level, Converter={StaticResource LogLevelToSymbolConverter}}"
+                                  Foreground="{Binding Level, Converter={StaticResource LogLevelToBrushConverter}}"
+                                  FontFamily="{StaticResource SymbolThemeFontFamily}"
+                                  FontSize="14"
+                                  VerticalAlignment="Top"
+                                  Margin="0,1,6,0">
+                            <ToolTipService.ToolTip>
+                                <ToolTip Content="{Binding Level}"/>
+                            </ToolTipService.ToolTip>
+                        </FontIcon>
+
+                        <TextBlock Grid.Column="2"
+                                   Text="{Binding Category}"
+                                   FontSize="11"
+                                   VerticalAlignment="Top"
+                                   Margin="0,1,8,0"
+                                   MaxWidth="150"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}">
+                            <ToolTipService.ToolTip>
+                                <ToolTip Content="{Binding Category}"/>
+                            </ToolTipService.ToolTip>
+                        </TextBlock>
+
+                        <TextBlock Grid.Column="3"
+                                   Text="{Binding Message}"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Top"
+                                   IsTextSelectionEnabled="True"
+                                   Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+</Page>

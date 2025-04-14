@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="StreamWeaver.UI.Views.SettingsPages.OverlaysSettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:StreamWeaver.UI.Views.SettingsPages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:viewmodels="using:StreamWeaver.UI.ViewModels"
+    xmlns:converters="using:StreamWeaver.UI.Converters"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance Type=viewmodels:SettingsViewModel, IsDesignTimeCreatable=False}"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Page.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+    </Page.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  Padding="20">
+        <StackPanel Spacing="15">
+            <TextBlock Text="OBS Overlays"
+                       Style="{ThemeResource SubtitleTextBlockStyle}"/>
+            <TextBlock Text="Configure the local web server and appearance of the browser source overlays."
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,10"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+            <NumberBox Header="Web Server Port"
+                       Minimum="1025"
+                       Maximum="65535"
+                       SpinButtonPlacementMode="Inline"
+                       SmallChange="1"
+                       LargeChange="10"
+                       Value="{Binding OverlaySettings.WebServerPort, Mode=TwoWay}">
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="The local network port the overlay server will run on. Ensure this port is not used by other applications and is allowed through your firewall if accessed from other devices."/>
+                </ToolTipService.ToolTip>
+            </NumberBox>
+            <TextBox Header="Chat Overlay URL (Read Only)"
+                     IsReadOnly="True"
+                     Text="{Binding ChatOverlayUrl}">
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="Add this URL as a Browser Source in OBS."/>
+                </ToolTipService.ToolTip>
+            </TextBox>
+            <Button Content="Copy Chat URL"
+                    Command="{Binding CopyOverlayUrlCommand}"
+                    CommandParameter="Chat"
+                    HorizontalAlignment="Left">
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="Copy the chat overlay URL to your clipboard."/>
+                </ToolTipService.ToolTip>
+            </Button>
+
+            <Expander Header="Chat Overlay Customization"
+                      Margin="0,10,0,0">
+                <StackPanel Spacing="10"
+                            Margin="24,5,0,0">
+                    <TextBlock Text="Customize the look and feel of the chat overlay displayed in OBS."
+                               FontSize="12"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Margin="0,0,0,5"/>
+                    <NumberBox Header="Max Messages"
+                               Minimum="1"
+                               Maximum="100"
+                               Value="{Binding OverlaySettings.Chat.MaxMessages, Mode=TwoWay}"
+                               SmallChange="1">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="The maximum number of messages to display on the overlay at once."/>
+                        </ToolTipService.ToolTip>
+                    </NumberBox>
+                    <TextBox Header="Font Family"
+                             Text="{Binding OverlaySettings.Chat.Font, Mode=TwoWay}"
+                             PlaceholderText="e.g., Arial, Segoe UI, Impact">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="The CSS font-family to use for chat messages (ensure the font is installed)."/>
+                        </ToolTipService.ToolTip>
+                    </TextBox>
+                    <NumberBox Header="Font Size (px)"
+                               Minimum="8"
+                               Maximum="72"
+                               Value="{Binding OverlaySettings.Chat.FontSize, Mode=TwoWay}"
+                               SmallChange="1">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="The font size in pixels."/>
+                        </ToolTipService.ToolTip>
+                    </NumberBox>
+                    <TextBox Header="Text Color (Hex or Name)"
+                             Text="{Binding OverlaySettings.Chat.TextColor, Mode=TwoWay}"
+                             PlaceholderText="e.g., #FFFFFF, white">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Default text color for messages (CSS color value)."/>
+                        </ToolTipService.ToolTip>
+                    </TextBox>
+                    <TextBox Header="Background Color (CSS value)"
+                             Text="{Binding OverlaySettings.Chat.BackgroundColor, Mode=TwoWay}"
+                             PlaceholderText="e.g., rgba(0,0,0,0.5), transparent">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Background color for message containers. Use 'transparent' or RGBA values for transparency."/>
+                        </ToolTipService.ToolTip>
+                    </TextBox>
+                    <ToggleSwitch Header="Show Badges"
+                                  IsOn="{Binding OverlaySettings.Chat.ShowBadges, Mode=TwoWay}">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Display user badges (e.g., subscriber, moderator) next to usernames."/>
+                        </ToolTipService.ToolTip>
+                    </ToggleSwitch>
+                    <ToggleSwitch Header="Show Platform Icons"
+                                  IsOn="{Binding OverlaySettings.Chat.ShowPlatformIcons, Mode=TwoWay}">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Display a small icon indicating the message's origin platform (Twitch/YouTube)."/>
+                        </ToolTipService.ToolTip>
+                    </ToggleSwitch>
+                    <ToggleSwitch Header="Use Platform Colors for Names"
+                                  IsOn="{Binding OverlaySettings.Chat.UsePlatformColors, Mode=TwoWay}">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Color usernames based on the color set on the platform (e.g., Twitch user color)."/>
+                        </ToolTipService.ToolTip>
+                    </ToggleSwitch>
+                    <ToggleSwitch Header="Fade Out Old Messages"
+                                  IsOn="{Binding OverlaySettings.Chat.FadeMessages, Mode=TwoWay}">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Automatically fade out and remove messages after a set delay."/>
+                        </ToolTipService.ToolTip>
+                    </ToggleSwitch>
+                    <NumberBox Header="Fade Delay (seconds)"
+                               Minimum="5"
+                               Maximum="300"
+                               IsEnabled="{Binding OverlaySettings.Chat.FadeMessages}"
+                               Value="{Binding OverlaySettings.Chat.FadeDelaySeconds, Mode=TwoWay}"
+                               SmallChange="1">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="How long (in seconds) a message stays fully visible before starting to fade out."/>
+                        </ToolTipService.ToolTip>
+                    </NumberBox>
+                    <TextBox Header="Timestamp Format (e.g., HH:mm)"
+                             PlaceholderText="Leave empty to hide"
+                             Text="{Binding OverlaySettings.Chat.TimestampFormat, Mode=TwoWay}">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Format for displaying timestamps (e.g., HH:mm, HH:mm:ss). Leave empty to hide timestamps."/>
+                        </ToolTipService.ToolTip>
+                    </TextBox>
+                    <TextBox Header="Highlight Color (CSS)"
+                             Text="{Binding OverlaySettings.Chat.HighlightColor, Mode=TwoWay}"
+                             PlaceholderText="e.g., #FFD700, gold">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Background/border color accent for highlighted messages (e.g., Twitch Channel Points)."/>
+                        </ToolTipService.ToolTip>
+                    </TextBox>
+                    <TextBox Header="Subscription Color (CSS)"
+                             Text="{Binding OverlaySettings.Chat.SubColor, Mode=TwoWay}"
+                             PlaceholderText="e.g., #8A2BE2, blueviolet">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Background/border color accent for subscription/membership messages."/>
+                        </ToolTipService.ToolTip>
+                    </TextBox>
+                    <TextBox Header="Donation Color (CSS)"
+                             Text="{Binding OverlaySettings.Chat.DonationColor, Mode=TwoWay}"
+                             PlaceholderText="e.g., #1E90FF, dodgerblue">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Background/border color accent for donation/cheer/SuperChat messages."/>
+                        </ToolTipService.ToolTip>
+                    </TextBox>
+                </StackPanel>
+            </Expander>
+            <Expander Header="Subathon Timer Overlay"
+                      Margin="0,10,0,0">
+                <!-- TODO: Add URL display/copy for Subtimer -->
+                <TextBlock Text="Sub Timer overlay settings will go here..."
+                           Margin="24,5,0,0"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           FontStyle="Italic"/>
+            </Expander>
+            <Expander Header="Goal Overlay"
+                      Margin="0,10,0,0">
+                <!-- TODO: Add URL display/copy for Goal -->
+                <TextBlock Text="Goal overlay settings will go here..."
+                           Margin="24,5,0,0"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           FontStyle="Italic"/>
+            </Expander>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

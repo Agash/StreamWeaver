@@ -1,0 +1,28 @@
+body {
+    background-color: transparent;
+    font-family: "Segoe UI", Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+    color: #fff;
+    margin: 0;
+    padding: 10px;
+    text-align: center;
+    overflow: hidden;
+}
+
+#subtimer-container {
+    background-color: rgb(0 0 0 / 60%);
+    padding: 15px;
+    border-radius: 8px;
+    display: inline-block; /* Fit content */
+}
+
+#timer-label {
+    font-size: 1.2em;
+    color: #ccc;
+    margin-bottom: 5px;
+}
+
+#timer-display {
+    font-size: 3em;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px #000;
+}

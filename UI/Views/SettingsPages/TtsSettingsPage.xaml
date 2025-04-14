@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="StreamWeaver.UI.Views.SettingsPages.TtsSettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:StreamWeaver.UI.Views.SettingsPages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:viewmodels="using:StreamWeaver.UI.ViewModels"
+    xmlns:converters="using:StreamWeaver.UI.Converters"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance Type=viewmodels:SettingsViewModel, IsDesignTimeCreatable=False}"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Page.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter"/>
+        <StaticResource x:Key="DecimalFormatter"
+                        ResourceKey="DecimalFormatter"/>
+        <StaticResource x:Key="IntegerFormatter"
+                        ResourceKey="IntegerFormatter"/>
+    </Page.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  Padding="20">
+        <StackPanel Spacing="15">
+            <TextBlock Text="Text-to-Speech (TTS)"
+                       Style="{ThemeResource SubtitleTextBlockStyle}"/>
+            <ToggleSwitch Header="Enable TTS"
+                          IsOn="{Binding TtsSettings.Enabled, Mode=TwoWay}">
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="Globally enable or disable the text-to-speech feature."/>
+                </ToolTipService.ToolTip>
+            </ToggleSwitch>
+            <ComboBox Header="Voice"
+                      ItemsSource="{Binding Voices}"
+                      SelectedItem="{Binding TtsSettings.SelectedVoice, Mode=TwoWay}"
+                      IsEnabled="{Binding TtsSettings.Enabled}"
+                      PlaceholderText="Default System Voice">
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="Select the voice used for TTS playback. Uses installed Windows voices."/>
+                </ToolTipService.ToolTip>
+            </ComboBox>
+            <Slider Header="Volume"
+                    Minimum="0"
+                    Maximum="100"
+                    Value="{Binding TtsSettings.Volume, Mode=TwoWay}"
+                    TickFrequency="10"
+                    TickPlacement="Inline"
+                    StepFrequency="1"
+                    IsEnabled="{Binding TtsSettings.Enabled}">
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="Adjust the volume of the TTS voice (0-100)."/>
+                </ToolTipService.ToolTip>
+            </Slider>
+            <Slider Header="Rate"
+                    Minimum="-10"
+                    Maximum="10"
+                    Value="{Binding TtsSettings.Rate, Mode=TwoWay}"
+                    TickFrequency="1"
+                    TickPlacement="Inline"
+                    StepFrequency="1"
+                    IsEnabled="{Binding TtsSettings.Enabled}">
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="Adjust the speaking rate of the TTS voice (-10 to +10)."/>
+                </ToolTipService.ToolTip>
+            </Slider>
+            <Button Content="Test TTS"
+                    Command="{Binding TestTtsCommand}"
+                    IsEnabled="{Binding TtsSettings.Enabled}"
+                    HorizontalAlignment="Left">
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="Play a sample message using the current settings."/>
+                </ToolTipService.ToolTip>
+            </Button>
+
+            <Expander Header="TTS Event Triggers"
+                      Margin="0,10,0,0"
+                      IsEnabled="{Binding TtsSettings.Enabled}"
+                      IsExpanded="True">
+                <StackPanel Spacing="5"
+                            Margin="24,5,0,0">
+                    <TextBlock Text="Read aloud:"
+                               Margin="0,0,0,5"/>
+                    <CheckBox Content="Twitch Subscriptions / Resubs"
+                              IsChecked="{Binding TtsSettings.ReadTwitchSubs, Mode=TwoWay}">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Read out new subscriptions and resubscriptions from Twitch."/>
+                        </ToolTipService.ToolTip>
+                    </CheckBox>
+                    <CheckBox Content="Twitch Bits / Cheers"
+                              IsChecked="{Binding TtsSettings.ReadTwitchBits, Mode=TwoWay}">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Read out Bit donations (cheers) from Twitch."/>
+                        </ToolTipService.ToolTip>
+                    </CheckBox>
+                    <NumberBox Header="Minimum Bits to Read"
+                               Minimum="0"
+                               Value="{Binding TtsSettings.MinimumBitAmountToRead, Mode=TwoWay}"
+                               IsEnabled="{Binding TtsSettings.ReadTwitchBits}"
+                               NumberFormatter="{StaticResource IntegerFormatter}"
+                               SpinButtonPlacementMode="Inline"
+                               SmallChange="10"
+                               LargeChange="100"
+                               Margin="20,0,0,0">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Only read cheers that meet or exceed this bit amount."/>
+                        </ToolTipService.ToolTip>
+                    </NumberBox>
+                    <CheckBox Content="YouTube Memberships / Milestones"
+                              IsChecked="{Binding TtsSettings.ReadYouTubeMemberships, Mode=TwoWay}">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Read out new YouTube memberships and milestone messages."/>
+                        </ToolTipService.ToolTip>
+                    </CheckBox>
+                    <CheckBox Content="YouTube Super Chats / Stickers"
+                              IsChecked="{Binding TtsSettings.ReadSuperChats, Mode=TwoWay}">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Read out YouTube Super Chats and Super Stickers."/>
+                        </ToolTipService.ToolTip>
+                    </CheckBox>
+                    <NumberBox Header="Minimum Super Chat Amount"
+                               Minimum="0"
+                               Value="{Binding TtsSettings.MinimumSuperChatAmountToRead, Mode=TwoWay}"
+                               IsEnabled="{Binding TtsSettings.ReadSuperChats}"
+                               NumberFormatter="{StaticResource DecimalFormatter}"
+                               SpinButtonPlacementMode="Inline"
+                               SmallChange="0.5"
+                               LargeChange="1"
+                               Margin="20,0,0,0">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Only read Super Chats/Stickers that meet or exceed this monetary value (in your default currency)."/>
+                        </ToolTipService.ToolTip>
+                    </NumberBox>
+                    <CheckBox Content="Streamlabs Donations"
+                              IsChecked="{Binding TtsSettings.ReadStreamlabsDonations, Mode=TwoWay}">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Read out donations received via Streamlabs."/>
+                        </ToolTipService.ToolTip>
+                    </CheckBox>
+                    <NumberBox Header="Minimum Donation Amount"
+                               Minimum="0"
+                               Value="{Binding TtsSettings.MinimumDonationAmountToRead, Mode=TwoWay}"
+                               IsEnabled="{Binding TtsSettings.ReadStreamlabsDonations}"
+                               NumberFormatter="{StaticResource DecimalFormatter}"
+                               SpinButtonPlacementMode="Inline"
+                               SmallChange="0.5"
+                               LargeChange="1"
+                               Margin="20,0,0,0">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Only read Streamlabs donations that meet or exceed this monetary value."/>
+                        </ToolTipService.ToolTip>
+                    </NumberBox>
+                    <CheckBox Content="Follows"
+                              IsChecked="{Binding TtsSettings.ReadFollows, Mode=TwoWay}">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Read out new follower alerts."/>
+                        </ToolTipService.ToolTip>
+                    </CheckBox>
+                    <CheckBox Content="Raids"
+                              IsChecked="{Binding TtsSettings.ReadRaids, Mode=TwoWay}">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Read out incoming raid notifications."/>
+                        </ToolTipService.ToolTip>
+                    </CheckBox>
+                </StackPanel>
+            </Expander>
+
+            <Expander Header="TTS Message Formats"
+                      Margin="0,10,0,0"
+                      IsEnabled="{Binding TtsSettings.Enabled}">
+                <StackPanel Margin="24,5,0,0"
+                            Spacing="10">
+                    <TextBlock TextWrapping="Wrap"
+                               FontSize="11"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Margin="0,0,0,10">
+                          Edit the format strings used for TTS announcements. Available placeholders depend on the event type (common ones: {username}, {amount}, {message}, {months}, {tier}, {recipient}, {viewers}). Invalid placeholders will be ignored.
+                    </TextBlock>
+                    <TextBox Header="Donation Format"
+                             Text="{Binding TtsSettings.DonationMessageFormat, Mode=TwoWay}"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             Height="60">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Format for Streamlabs donations. Placeholders: {username}, {amount}, {message}."/>
+                        </ToolTipService.ToolTip>
+                    </TextBox>
+                    <TextBox Header="Bits Format"
+                             Text="{Binding TtsSettings.BitsMessageFormat, Mode=TwoWay}"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             Height="60">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Format for Twitch Bits/Cheers. Placeholders: {username}, {amount}, {message}."/>
+                        </ToolTipService.ToolTip>
+                    </TextBox>
+                    <TextBox Header="SuperChat Format"
+                             Text="{Binding TtsSettings.SuperChatMessageFormat, Mode=TwoWay}"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             Height="60">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Format for YouTube Super Chats/Stickers. Placeholders: {username}, {amount}, {message}."/>
+                        </ToolTipService.ToolTip>
+                    </TextBox>
+                    <TextBox Header="New Sub Format"
+                             Text="{Binding TtsSettings.NewSubMessageFormat, Mode=TwoWay}"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             Height="60">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Format for new Twitch subscriptions. Placeholders: {username}, {tier}."/>
+                        </ToolTipService.ToolTip>
+                    </TextBox>
+                    <TextBox Header="Resub Format"
+                             Text="{Binding TtsSettings.ResubMessageFormat, Mode=TwoWay}"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             Height="60">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Format for Twitch resubscriptions. Placeholders: {username}, {months}, {tier}, {message}."/>
+                        </ToolTipService.ToolTip>
+                    </TextBox>
+                    <TextBox Header="Gift Sub Format"
+                             Text="{Binding TtsSettings.GiftSubMessageFormat, Mode=TwoWay}"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             Height="60">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Format for single gifted Twitch subscriptions. Placeholders: {username} (gifter), {recipient}, {tier}."/>
+                        </ToolTipService.ToolTip>
+                    </TextBox>
+                    <TextBox Header="Gift Bomb Format"
+                             Text="{Binding TtsSettings.GiftBombMessageFormat, Mode=TwoWay}"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             Height="60">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Format for multiple gifted Twitch subscriptions (gift bomb). Placeholders: {username} (gifter), {amount} (number of gifts), {tier}."/>
+                        </ToolTipService.ToolTip>
+                    </TextBox>
+                    <TextBox Header="New Member Format"
+                             Text="{Binding TtsSettings.NewMemberMessageFormat, Mode=TwoWay}"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             Height="60">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Format for new YouTube memberships. Placeholders: {username}, {tier}."/>
+                        </ToolTipService.ToolTip>
+                    </TextBox>
+                    <TextBox Header="Member Milestone Format"
+                             Text="{Binding TtsSettings.MemberMilestoneFormat, Mode=TwoWay}"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             Height="60">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Format for YouTube membership milestones. Placeholders: {username}, {months}, {tier}, {message}."/>
+                        </ToolTipService.ToolTip>
+                    </TextBox>
+                    <TextBox Header="Follow Format"
+                             Text="{Binding TtsSettings.FollowMessageFormat, Mode=TwoWay}"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             Height="60">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Format for new follower alerts. Placeholders: {username}."/>
+                        </ToolTipService.ToolTip>
+                    </TextBox>
+                    <TextBox Header="Raid Format"
+                             Text="{Binding TtsSettings.RaidMessageFormat, Mode=TwoWay}"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             Height="60">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Format for incoming raid alerts. Placeholders: {username} (raider), {amount} (viewers)."/>
+                        </ToolTipService.ToolTip>
+                    </TextBox>
+                </StackPanel>
+            </Expander>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

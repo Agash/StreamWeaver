@@ -1,0 +1,10 @@
+{
+    "profiles": {
+        "StreamWeaver (Package)": {
+            "commandName": "MsixPackage"
+        },
+        "StreamWeaver (Unpackaged)": {
+            "commandName": "Project"
+        }
+    }
+}
