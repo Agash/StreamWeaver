@@ -1,4 +1,4 @@
-### ⚠️⚠️⚠️ This is largly untested as of yet, as I don't stream myself. If anyone wants to help test this, please, hit me up! Below is what's currently implemented (at at least has some code for it), not all confirmed to be in a *working* status so to say.
+### ⚠️⚠️⚠️ This is largly untested as of yet, as I don't stream myself. If anyone wants to help test this, please, hit me up! Below is what's currently implemented (at least has some code for it), not all confirmed to be in a *working* status so to say.
 
 ----
 
@@ -12,7 +12,7 @@ StreamWeaver is your friendly, free, and open-source desktop sidekick designed t
 
 ## What's the Big Deal? 🤔
 
-*   **One Chat to Rule Them All:** Connect multiple *distinct* Twitch and YouTube accounts. See all your chats combined, but styled accurately for each platform. 👑
+*   **One Chat to Rule Them All:** Connect multiple *distinct* Twitch and YouTube accounts. That means, multiple YouTube and multiple Twitch Accounts. See all your chats combined, but styled accurately for each platform. 👑
 *   **Know Your Platforms:** Messages look like they belong – Twitch subs look like Twitch subs, YouTube Super Chats look like Super Chats (colors and all!). 🎨
 *   **Event Horizon (The Good Kind):** Catches not just chat, but also subs, follows, raids, memberships, Super Chats, donations (via Streamlabs), and more! 📢
 *   **Talk Back!** Send messages from any of your connected accounts right from the app. 🗣️
@@ -42,15 +42,15 @@ You can create API credentials here:
 
 Please refer to the setup documentation (coming soon) or the settings page within StreamWeaver for guidance on configuring the Redirect URIs needed during credential setup (`http://localhost:5081/callback/twitch` and `http://localhost:5081/callback/google`).
 
-## Current Status (As of April 2025 - Updated) 🚧
+## Current Status (As of April 2025) 🚧
 
 *   **Twitch:** ✅ Chat Read/Send, ✅ Event Parsing (Subs, Raids, Follows, etc.). ⏳ Moderation actions planned.
 *   **YouTube:** ✅ Chat Read (via unofficial API), ✅ Chat Send (Official API), ✅ Membership/Super Chat Events, ✅ Moderation Actions (Delete, Timeout, Ban - Official API), ✅ Poll Creation/Ending (Official API). ⏳ Goal features planned.
 *   **Streamlabs:** ✅ Basic Connection (Socket API), ✅ Donation Events. ⏳ Parsing for other SL event types planned.
-*   **Overlays:** ✅ Basic Chat Overlay. ⏳ Enhancements & other overlay types planned.
-*   **TTS:** ✅ Basic Windows TTS implementation. ⏳ KokoroSharp integration, Queued playback, Enhanced formatting planned.
+*   **Overlays:** ✅ Basic Chat Overlay functionality.⏳ Proper display pending ⏳ Enhancements & other overlay types planned.
+*   **TTS:** ✅ Basic Windows TTS implementation. ⏳ KokoroSharp (fast, local, natural TTS) integration, Queued playback, Enhanced formatting planned.
 *   **Installer:** ⏳ Installer with auto-updates planned.
-*   **Plugins:** ✅ Basic C# plugin system functional.
+*   **Plugins:** ✅ Basic C# plugin system functional. ⏳ Basic JavaScript plugin system planned.
 
 ## Tech Stack 🤓
 
@@ -59,7 +59,7 @@ Please refer to the setup documentation (coming soon) or the settings page withi
 *   **Architecture:** MVVM (CommunityToolkit.Mvvm), Dependency Injection
 *   **Platform Libs:** TwitchLib, Google.Apis.YouTube.v3, YTLiveChat (Unofficial Reader), SocketIOClient, **KokoroSharp (Planned)**
 *   **Web Server:** ASP.NET Core Kestrel
-*   **Installer:** Custom (e.g., Squirrel.Windows - Planned)
+*   **Installer:** Velopack
 
 ## ⚠️ Disclaimer: The YouTube Reading Part ⚠️
 
