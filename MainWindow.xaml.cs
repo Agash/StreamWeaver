@@ -44,7 +44,7 @@ public sealed partial class MainWindow : Window
     /// <summary>
     /// Handles the Loaded event for the NavigationView to set the initial selected item and page.
     /// </summary>
-    private void OnNavViewLoaded(object sender, RoutedEventArgs args)
+    private async void OnNavViewLoaded(object sender, RoutedEventArgs args)
     {
         // Ensure NavView has items and nothing is selected yet
         if (NavView.MenuItems.Count > 0 && NavView.SelectedItem == null)
@@ -54,8 +54,8 @@ public sealed partial class MainWindow : Window
             _logger.LogInformation("Initial navigation view set to Chat.");
         }
 
-        // Unsubscribe after first load if only needed once
-        // NavView.Loaded -= OnNavViewLoaded;
+        // Unsubscribe after first load
+        NavView.Loaded -= OnNavViewLoaded;
     }
 
     /// <summary>

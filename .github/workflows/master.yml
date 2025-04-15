@@ -1,0 +1,32 @@
+name: Build and Deploy
+
+permissions:
+    contents: write
+
+on:
+    push:
+        branches:
+            - master
+
+jobs:
+    deploy-to-github-release:
+        runs-on: windows-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v4
+            - name: Get Version from Project File
+              id: get-version
+              shell: bash
+              run: echo "version=$(grep -oE '<Version>[^<]+' StreamWeaver.csproj | sed 's/<Version>//')" >> $GITHUB_OUTPUT
+            - name: Install .NET
+              uses: actions/setup-dotnet@v4
+              with:
+                dotnet-version: 9.0.x
+            - name: Publish Applications
+              run: dotnet publish .\StreamWeaver.csproj -c Release /p:PublishProfile=Properties\PublishProfiles\win-x64.pubxml
+            - name: Create Release
+              run: |
+                dotnet tool install -g vpk
+                vpk download github --repoUrl https://github.com/${{ github.repository }}
+                vpk pack -u StreamWeaver -v ${{ steps.get-version.outputs.version }} -p publish
+                vpk upload github --repoUrl https://github.com/${{ github.repository }} --publish --releaseName "StreamWeaver ${{ steps.get-version.outputs.version }}" --tag v${{ steps.get-version.outputs.version }}

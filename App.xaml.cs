@@ -17,6 +17,8 @@ using StreamWeaver.Core.Services.Web;
 using StreamWeaver.Modules.Goals;
 using StreamWeaver.Modules.Subathon;
 using StreamWeaver.UI.ViewModels;
+using Velopack;
+using Velopack.Sources;
 using YTLiveChat.Contracts;
 
 namespace StreamWeaver;
@@ -32,9 +34,15 @@ public partial class App : Application
 
     public App()
     {
+        VelopackApp.Build()
+            .WithFirstRun((v) => { /* First run logic here */ })
+            .Run();
+
         Services = ConfigureServices();
         s_serviceProvider = Services;
         InitializeComponent();
+
+        _ = CheckForUpdatesInBackgroundAsync();
     }
 
     public static T GetService<T>()
@@ -194,6 +202,51 @@ public partial class App : Application
         }
 
         logger.LogInformation("OnLaunched Finished.");
+    }
+
+    // Example background update check method
+    private static async Task CheckForUpdatesInBackgroundAsync(TimeSpan? delay = null)
+    {
+        if (delay.HasValue)
+        {
+            await Task.Delay(delay.Value);
+        }
+
+        try
+        {
+            var source = new GithubSource("https://github.com/Agash/StreamWeaver", null, false);
+            var manager = new UpdateManager(source);
+
+            UpdateInfo? updateInfo = await manager.CheckForUpdatesAsync();
+            if (updateInfo == null)
+            {
+                return; // No update available
+            }
+
+
+            // Download the update
+            // Consider progress reporting if needed (manager.DownloadProgress)
+            await manager.DownloadUpdatesAsync(updateInfo);
+
+
+            // Apply the update silently on next restart
+            manager.ApplyUpdatesAndRestart(updateInfo); // This will apply on *next* normal restart
+                                                        // OR
+                                                        // Show a notification to the user and let them restart
+                                                        // ShowUpdateNotification(updateInfo); // Implement this method in your UI logic
+
+            // Example: Apply and restart immediately (use with caution, inform the user!)
+            // if (UserConfirmsRestart()) // Get user confirmation
+            // {
+            //      manager.ApplyUpdatesAndRestart(updateInfo);
+            // }
+
+        }
+        catch (Exception ex)
+        {
+            // Handle exceptions appropriately (e.g., network errors)
+            Console.WriteLine(ex.ToString());
+        }
     }
 }
 
