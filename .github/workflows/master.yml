@@ -23,7 +23,7 @@ jobs:
               with:
                 dotnet-version: 9.0.x
             - name: Publish Applications
-              run: dotnet publish .\StreamWeaver.csproj -c Release /p:PublishProfile=win-x64
+              run: dotnet publish .\StreamWeaver.csproj -c Release -f net9.0-windows10.0.19041.0 -r win-x64 --self-contained -o "bin\win-x64\publish\" -p:PublishSingleFile=false -p:PublishReadyToRun=false -p:PublishTrimmed=false
             - name: Create Release
               run: |
                 dotnet tool install -g vpk
