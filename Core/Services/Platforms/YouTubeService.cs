@@ -287,11 +287,12 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
         _logger.LogInformation("[{AccountId}] Searching for USER'S active broadcast Video ID using official API...", accountId);
         try
         {
-            LiveBroadcastsResource.ListRequest request = wrapper.OfficialApiService.LiveBroadcasts.List("id");
-            request.BroadcastStatus = LiveBroadcastsResource.ListRequest.BroadcastStatusEnum.Active;
+            LiveBroadcastsResource.ListRequest request = wrapper.OfficialApiService.LiveBroadcasts.List("id,status");
             request.Mine = true;
             LiveBroadcastListResponse response = await request.ExecuteAsync();
-            LiveBroadcast? activeBroadcast = response.Items?.FirstOrDefault();
+            LiveBroadcast? activeBroadcast = response.Items?.Where(b => b.Status.LifeCycleStatus == "live").FirstOrDefault();
+            activeBroadcast ??= response.Items?.Where(b => b.Status.LifeCycleStatus == "liveStarting").FirstOrDefault();
+            activeBroadcast ??= response.Items?.Where(b => b.Status.LifeCycleStatus == "ready").FirstOrDefault();
             if (activeBroadcast != null && !string.IsNullOrEmpty(activeBroadcast.Id))
             {
                 _logger.LogInformation("[{AccountId}] Found user's active broadcast VideoID={VideoId}", accountId, activeBroadcast.Id);
