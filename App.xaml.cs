@@ -31,6 +31,14 @@ public partial class App : Application
     public static Window? MainWindow { get; private set; }
     public IServiceProvider Services { get; }
     private static IServiceProvider? s_serviceProvider;
+    private static ILogger<App>? s_logger;
+
+    // Velopack Update State
+    private static UpdateManager? s_updateManager;
+    private static UpdateInfo? s_pendingUpdateInfo;
+    private static bool s_updateDownloadInitiated = false;
+    private static bool s_updateAppliedOrDeferred = false;
+    private static readonly Lock s_updateLock = new();
 
     public App()
     {
@@ -40,9 +48,12 @@ public partial class App : Application
 
         Services = ConfigureServices();
         s_serviceProvider = Services;
+        s_logger = Services.GetRequiredService<ILogger<App>>();
         InitializeComponent();
 
-        _ = CheckForUpdatesInBackgroundAsync();
+        // Start checking for updates in the background shortly after launch
+        // Delay slightly to allow the main window to initialize visually
+        _ = CheckForUpdatesInBackgroundAsync(TimeSpan.FromSeconds(5));
     }
 
     public static T GetService<T>()
@@ -137,8 +148,7 @@ public partial class App : Application
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
-        ILogger<App> logger = Services.GetRequiredService<ILogger<App>>();
-        logger.LogInformation("OnLaunched Started.");
+        s_logger?.LogInformation("OnLaunched Started.");
 
         ILogger<MainWindow> mainWindowLogger = Services.GetRequiredService<ILogger<MainWindow>>();
         MainWindowViewModel mainWindowViewModel = Services.GetRequiredService<MainWindowViewModel>();
@@ -147,106 +157,332 @@ public partial class App : Application
 
         if (MainWindow.Content == null)
         {
-            logger.LogDebug("MainWindow content is null, setting up basic Frame.");
+            s_logger?.LogDebug("MainWindow content is null, setting up basic Frame.");
             Frame rootFrame = new();
             MainWindow.Content = rootFrame;
         }
 
+        // Ensure the MainWindow is created and XamlRoot is available before potential dialogs
         MainWindow.Activate();
-        logger.LogInformation("MainWindow Activated.");
+        s_logger?.LogInformation("MainWindow Activated.");
 
         try
         {
-            logger.LogInformation("Initializing core services...");
+            s_logger?.LogInformation("Initializing core services...");
             ISettingsService settingsService = Services.GetRequiredService<ISettingsService>();
-            logger.LogDebug("Loading settings...");
+            s_logger?.LogDebug("Loading settings...");
             await settingsService.LoadSettingsAsync();
-            logger.LogDebug("Settings loaded.");
+            s_logger?.LogDebug("Settings loaded.");
 
             IEmoteBadgeService emoteBadgeService = Services.GetRequiredService<IEmoteBadgeService>();
-            logger.LogDebug("Loading global emote/badge data...");
+            s_logger?.LogDebug("Loading global emote/badge data...");
             await emoteBadgeService.LoadGlobalTwitchDataAsync();
-            logger.LogDebug("Global emote/badge data load attempted.");
+            s_logger?.LogDebug("Global emote/badge data load attempted.");
 
             WebServerService webServer = Services.GetRequiredService<WebServerService>();
-            logger.LogDebug("Starting web server...");
-            _ = Task.Run(webServer.StartAsync);
+            s_logger?.LogDebug("Starting web server...");
+            _ = Task.Run(webServer.StartAsync); // Fire and forget
 
             UnifiedEventService unifiedEventService = Services.GetRequiredService<UnifiedEventService>();
-            logger.LogDebug("Initializing UnifiedEventService...");
+            s_logger?.LogDebug("Initializing UnifiedEventService...");
             await unifiedEventService.InitializeAsync();
-            logger.LogDebug("UnifiedEventService initialized.");
+            s_logger?.LogDebug("UnifiedEventService initialized.");
 
-            logger.LogDebug("Initializing PluginService...");
+            s_logger?.LogDebug("Initializing PluginService...");
             PluginService pluginService = Services.GetRequiredService<PluginService>();
             string baseDirectory = AppContext.BaseDirectory;
             string pluginsPath = Path.Combine(baseDirectory, "Plugins");
-            logger.LogDebug("Determined Plugins directory path: {pluginsPath}", pluginsPath);
+            s_logger?.LogDebug("Determined Plugins directory path: {pluginsPath}", pluginsPath);
             await pluginService.LoadPluginsAsync(pluginsPath);
-            logger.LogDebug("PluginService initialization complete.");
+            s_logger?.LogDebug("PluginService initialization complete.");
         }
         catch (Exception ex)
         {
-            logger.LogCritical(ex, "FATAL: Failed to initialize services or plugins on launch.");
-            ContentDialog dialog = new()
+            s_logger?.LogCritical(ex, "FATAL: Failed to initialize services or plugins on launch.");
+            // Ensure MainWindow and its XamlRoot are available before showing the dialog
+            if (MainWindow?.Content?.XamlRoot != null)
             {
-                Title = "Initialization Error",
-                Content = $"Failed to start essential services or load plugins: {ex.Message}",
-                CloseButtonText = "OK",
-                XamlRoot = MainWindow?.Content?.XamlRoot,
-            };
-            if (dialog.XamlRoot != null)
+                ContentDialog dialog = new()
+                {
+                    Title = "Initialization Error",
+                    Content = $"Failed to start essential services or load plugins: {ex.Message}\n\nSee logs for more details.",
+                    CloseButtonText = "OK",
+                    XamlRoot = MainWindow.Content.XamlRoot,
+                };
                 await dialog.ShowAsync();
+            }
             else
-                logger.LogError("Could not show error dialog: MainWindow XamlRoot is null.");
+            {
+                s_logger?.LogError("Could not show initialization error dialog: MainWindow or XamlRoot is null.");
+            }
         }
 
-        logger.LogInformation("OnLaunched Finished.");
+        s_logger?.LogInformation("OnLaunched Finished.");
     }
 
-    // Example background update check method
     private static async Task CheckForUpdatesInBackgroundAsync(TimeSpan? delay = null)
     {
+        if (s_logger == null) return;
+
         if (delay.HasValue)
         {
+            s_logger.LogInformation("Delaying update check for {DelaySeconds} seconds.", delay.Value.TotalSeconds);
             await Task.Delay(delay.Value);
         }
+
+        lock (s_updateLock)
+        {
+            if (s_updateDownloadInitiated || s_updateAppliedOrDeferred)
+            {
+                s_logger.LogInformation("Update check skipped: Download already in progress or update decision made.");
+                return;
+            }
+        }
+
+        s_logger.LogInformation("Starting background update check...");
 
         try
         {
             var source = new GithubSource("https://github.com/Agash/StreamWeaver", null, false);
-            var manager = new UpdateManager(source);
+            s_updateManager = new UpdateManager(source);
 
-            UpdateInfo? updateInfo = await manager.CheckForUpdatesAsync();
+            s_logger.LogDebug("Checking for updates...");
+            UpdateInfo? updateInfo = await s_updateManager.CheckForUpdatesAsync();
+
             if (updateInfo == null)
             {
-                return; // No update available
+                s_logger.LogInformation("No update available.");
+                return;
             }
 
+            s_logger.LogInformation("Update found: v{Version}. Current version: v{CurrentVersion}",
+                updateInfo.TargetFullRelease.Version, s_updateManager.CurrentVersion);
 
-            // Download the update
-            // Consider progress reporting if needed (manager.DownloadProgress)
-            await manager.DownloadUpdatesAsync(updateInfo);
+            lock (s_updateLock)
+            {
+                // Double-check inside lock in case another check completed concurrently
+                if (s_updateDownloadInitiated || s_updateAppliedOrDeferred) return;
 
+                s_pendingUpdateInfo = updateInfo;
+                s_updateDownloadInitiated = true; // Mark that we are STARTING the download process
+            }
 
-            // Apply the update silently on next restart
-            manager.ApplyUpdatesAndRestart(updateInfo); // This will apply on *next* normal restart
-                                                        // OR
-                                                        // Show a notification to the user and let them restart
-                                                        // ShowUpdateNotification(updateInfo); // Implement this method in your UI logic
+            s_logger.LogInformation("Initiating background download for update v{Version}.", updateInfo.TargetFullRelease.Version);
 
-            // Example: Apply and restart immediately (use with caution, inform the user!)
-            // if (UserConfirmsRestart()) // Get user confirmation
-            // {
-            //      manager.ApplyUpdatesAndRestart(updateInfo);
-            // }
+            // Start download in a truly background thread
+            _ = Task.Run(() => DownloadUpdateAsync(updateInfo));
 
+        }
+#if DEBUG
+        catch (Exception ex) when (ex.Message == "Cannot perform this operation in an application which is not installed.")
+        {
+            s_logger.LogDebug(ex, "Update check failed because unpackaged execution (DEBUG mode)");
+            lock (s_updateLock)
+            {
+                s_updateDownloadInitiated = false;
+                s_pendingUpdateInfo = null;
+            }
+        }
+#endif
+        catch (Exception ex)
+        {
+            s_logger.LogError(ex, "Update check failed.");
+            // Reset flags if the check itself fails
+            lock (s_updateLock)
+            {
+                s_updateDownloadInitiated = false;
+                s_pendingUpdateInfo = null;
+            }
+        }
+    }
+
+    // Runs in a background thread (called via Task.Run)
+    private static async Task DownloadUpdateAsync(UpdateInfo updateInfo)
+    {
+        if (s_updateManager == null) return; // Should not happen if check succeeded, but safety first
+
+        try
+        {
+            s_logger?.LogInformation("Background download started for v{Version}.", updateInfo.TargetFullRelease.Version);
+
+            // Optional: Progress Reporting
+            // var progress = new Progress<int>(percent => s_logger?.LogDebug("Download progress: {Percent}%", percent));
+            // await s_updateManager.DownloadUpdatesAsync(updateInfo, progress);
+            await s_updateManager.DownloadUpdatesAsync(updateInfo);
+
+            s_logger?.LogInformation("Update v{Version} downloaded successfully.", updateInfo.TargetFullRelease.Version);
+
+            // Download complete, now schedule the prompt on the UI thread
+            DispatcherQueue dispatcherQueue = GetService<DispatcherQueue>(); // Assuming GetService is thread-safe or called appropriately
+            if (dispatcherQueue == null)
+            {
+                s_logger?.LogError("Cannot show update prompt: DispatcherQueue is null after download.");
+                // If we can't get the dispatcher, we can't prompt. Reset state.
+                lock (s_updateLock)
+                {
+                    s_updateDownloadInitiated = false;
+                    s_pendingUpdateInfo = null;
+                }
+                return;
+            }
+
+            dispatcherQueue.TryEnqueue(() =>
+            {
+                // Ensure the app hasn't been closed or the update deferred while downloading
+                lock (s_updateLock)
+                {
+                    if (!s_updateAppliedOrDeferred)
+                    {
+                        _ = ShowUpdatePromptAsync(updateInfo); // Fire and forget the UI task
+                    }
+                    else
+                    {
+                        s_logger?.LogInformation("Update prompt skipped: Update was applied or deferred during download.");
+                    }
+                }
+            });
         }
         catch (Exception ex)
         {
-            // Handle exceptions appropriately (e.g., network errors)
-            Console.WriteLine(ex.ToString());
+            s_logger?.LogError(ex, "Update download failed for v{Version}.", updateInfo.TargetFullRelease.Version);
+            // Reset flags on download failure so the check might run again later
+            lock (s_updateLock)
+            {
+                s_updateDownloadInitiated = false;
+                s_pendingUpdateInfo = null;
+            }
+
+            // Optional: Notify user of download failure on UI thread
+            DispatcherQueue dispatcherQueue = GetService<DispatcherQueue>();
+            if (dispatcherQueue != null && MainWindow?.Content?.XamlRoot != null)
+            {
+                dispatcherQueue.TryEnqueue(async () =>
+                {
+                    ContentDialog errorDialog = new()
+                    {
+                        Title = "Update Download Failed",
+                        Content = $"Could not download the latest update. Please check your internet connection or logs for details.\nError: {ex.Message}",
+                        CloseButtonText = "OK",
+                        XamlRoot = MainWindow.Content.XamlRoot
+                    };
+                    await errorDialog.ShowAsync();
+                });
+            }
         }
+    }
+
+
+    // Runs EXCLUSIVELY on the UI thread (called via DispatcherQueue.TryEnqueue)
+    private static async Task ShowUpdatePromptAsync(UpdateInfo updateInfo)
+    {
+        // Double check conditions required for UI interaction
+        if (s_updateManager == null || MainWindow?.Content?.XamlRoot == null)
+        {
+            s_logger?.LogError("Cannot show update prompt: UpdateManager or MainWindow/XamlRoot is null.");
+            // Reset state if we can't even show the prompt
+            lock (s_updateLock)
+            {
+                s_updateDownloadInitiated = false; // Allow re-check/download
+                s_pendingUpdateInfo = null;
+                // Don't set s_updateAppliedOrDeferred as no decision was made
+            }
+            return;
+        }
+
+        // Check if a decision was made *while* this was being queued
+        lock (s_updateLock)
+        {
+            if (s_updateAppliedOrDeferred)
+            {
+                s_logger?.LogInformation("Update prompt skipped: Update decision already made.");
+                return;
+            }
+        }
+
+
+        s_logger?.LogInformation("Showing update prompt to user.");
+
+        ContentDialog updateDialog = new()
+        {
+            Title = "Update Available",
+            Content = $"A new version (v{updateInfo.TargetFullRelease.Version}) is ready. Install it now?",
+            PrimaryButtonText = "Install Now & Restart",
+            SecondaryButtonText = "Install on Exit",
+            DefaultButton = ContentDialogButton.Primary,
+            XamlRoot = MainWindow.Content.XamlRoot
+        };
+
+        ContentDialogResult result = await updateDialog.ShowAsync();
+
+        lock (s_updateLock)
+        {
+            // Mark that a decision has been made *now*, regardless of outcome
+            s_updateAppliedOrDeferred = true;
+            // s_updateDownloadInitiated remains true, as download *was* initiated/completed
+
+            switch (result)
+            {
+                case ContentDialogResult.Primary: // Install Now & Restart
+                    s_logger?.LogInformation("User chose to install update now.");
+                    try
+                    {
+                        // This call attempts to exit the app immediately
+                        s_updateManager.ApplyUpdatesAndRestart(updateInfo);
+                        // If ApplyUpdatesAndRestart fails, it throws, and we hit the catch block.
+                        // If it succeeds, the app exits, code below doesn't run.
+                    }
+                    catch (Exception ex)
+                    {
+                        s_logger?.LogError(ex, "Failed to apply updates and restart.");
+                        s_updateAppliedOrDeferred = false; // Reset decision state on failure
+                        // No need to reset s_updateDownloadInitiated, download is still done
+                        ShowErrorDialog("Update Installation Failed", $"Could not install the update. Error: {ex.Message}");
+                    }
+                    break;
+
+                case ContentDialogResult.Secondary: // Install on Exit
+                    s_logger?.LogInformation("User chose to install update on exit.");
+                    try
+                    {
+                        s_updateManager.WaitExitThenApplyUpdates(updateInfo);
+                        s_logger?.LogInformation("Update scheduled to be applied on application exit.");
+                        // Optionally show non-modal confirmation
+                    }
+                    catch (Exception ex)
+                    {
+                        s_logger?.LogError(ex, "Failed to schedule update for application exit.");
+                        s_updateAppliedOrDeferred = false; // Reset decision state on failure
+                        ShowErrorDialog("Update Scheduling Failed", $"Could not schedule the update. Error: {ex.Message}");
+                    }
+                    break;
+
+                case ContentDialogResult.None: // Dialog dismissed without button press (e.g., Esc)
+                default: // Treat "Later" or dismissal the same: Do nothing now
+                    s_logger?.LogInformation("User chose to install update later or closed the dialog.");
+                    // Update remains downloaded. Velopack will likely find it again on next launch.
+                    // We keep s_updateAppliedOrDeferred = true for this session to avoid re-prompting immediately.
+                    // On next app start, s_updateAppliedOrDeferred will be false, allowing a new check/prompt.
+                    break;
+            }
+        }
+    }
+
+    // Helper to show error dialogs on UI thread (must be called from UI thread or marshalled)
+    private static async void ShowErrorDialog(string title, string content)
+    {
+        if (MainWindow?.Content?.XamlRoot == null)
+        {
+            s_logger?.LogError("Cannot show error dialog '{Title}': MainWindow/XamlRoot is null.", title);
+            return;
+        }
+        ContentDialog errorDialog = new()
+        {
+            Title = title,
+            Content = content,
+            CloseButtonText = "OK",
+            XamlRoot = MainWindow.Content.XamlRoot
+        };
+        await errorDialog.ShowAsync();
     }
 }
 

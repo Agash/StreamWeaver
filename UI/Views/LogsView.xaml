@@ -8,7 +8,6 @@
     xmlns:viewmodels="using:StreamWeaver.UI.ViewModels"
     xmlns:models="using:StreamWeaver.Core.Models"
     xmlns:converters="using:StreamWeaver.UI.Converters"
-    xmlns:logging="using:Microsoft.Extensions.Logging"
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance Type=viewmodels:LogsViewModel, IsDesignTimeCreatable=False}"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
@@ -20,6 +19,18 @@
         <converters:LogLevelToSymbolConverter x:Key="LogLevelToSymbolConverter"/>
         <converters:LogLevelToBrushConverter x:Key="LogLevelToBrushConverter"/>
         <converters:DateTimeFormatConverter x:Key="DateTimeFormatConverter"/>
+        <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+
+        <!-- Style to remove spacing and rounded corners between ListView items -->
+        <Style x:Key="LogRowListViewItemStyle" TargetType="ListViewItem">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+            <Setter Property="CornerRadius" Value="0"/>
+        </Style>
+
     </Page.Resources>
 
     <Grid>
@@ -29,27 +40,13 @@
         </Grid.RowDefinitions>
 
         <!-- Filter Controls -->
-        <StackPanel Grid.Row="0"
-                    Orientation="Horizontal"
-                    Spacing="10"
-                    Padding="10">
-            <TextBlock Text="Show Levels:"
-                       VerticalAlignment="Center"/>
-            <CheckBox Content="Debug"
-                      IsChecked="{Binding ShowDebug, Mode=TwoWay}"
-                      VerticalAlignment="Center"/>
-            <CheckBox Content="Info"
-                      IsChecked="{Binding ShowInfo, Mode=TwoWay}"
-                      VerticalAlignment="Center"/>
-            <CheckBox Content="Warn"
-                      IsChecked="{Binding ShowWarn, Mode=TwoWay}"
-                      VerticalAlignment="Center"/>
-            <CheckBox Content="Error"
-                      IsChecked="{Binding ShowError, Mode=TwoWay}"
-                      VerticalAlignment="Center"/>
-            <Button Content="Clear Logs"
-                    Command="{Binding ClearLogsCommand}"
-                    Margin="20,0,0,0"/>
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Padding="10">
+            <TextBlock Text="Show Levels:" VerticalAlignment="Center"/>
+            <CheckBox Content="Debug" IsChecked="{Binding ShowDebug, Mode=TwoWay}" VerticalAlignment="Center"/>
+            <CheckBox Content="Info" IsChecked="{Binding ShowInfo, Mode=TwoWay}" VerticalAlignment="Center"/>
+            <CheckBox Content="Warn" IsChecked="{Binding ShowWarn, Mode=TwoWay}" VerticalAlignment="Center"/>
+            <CheckBox Content="Error" IsChecked="{Binding ShowError, Mode=TwoWay}" VerticalAlignment="Center"/>
+            <Button Content="Clear Logs" Command="{Binding ClearLogsCommand}" Margin="20,0,0,0"/>
         </StackPanel>
 
         <!-- Log List -->
@@ -61,59 +58,46 @@
             IsItemClickEnabled="False"
             HorizontalContentAlignment="Stretch"
             ScrollViewer.VerticalScrollBarVisibility="Auto"
-            ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+            ItemContainerStyle="{StaticResource LogRowListViewItemStyle}">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="models:LogEntry">
-                    <Grid Padding="4,2">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <!-- Timestamp -->
-                            <ColumnDefinition Width="Auto"/>
-                            <!-- Level Icon -->
-                            <ColumnDefinition Width="Auto"/>
-                            <!-- Category -->
-                            <ColumnDefinition Width="*"/>
-                            <!-- Message -->
-                        </Grid.ColumnDefinitions>
+                    <Grid Background="{Binding Level, Converter={StaticResource LogLevelToBrushConverter}, ConverterParameter=Background}"
+                          BorderThickness="0,0,0,1"
+                          BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                          CornerRadius="0">
+                        <StackPanel Padding="4,6,4,6">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="75"/>
+                                    <ColumnDefinition Width="25"/>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Column="0"
-                                   Text="{Binding Timestamp, Converter={StaticResource DateTimeFormatConverter}, ConverterParameter='HH:mm:ss.fff'}"
-                                   FontSize="11"
-                                   VerticalAlignment="Top"
-                                   Margin="0,1,8,0"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                <TextBlock Grid.Column="0" Text="{Binding Timestamp, Converter={StaticResource DateTimeFormatConverter}, ConverterParameter='HH:mm:ss.fff'}" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                <FontIcon Grid.Column="1" Glyph="{Binding Level, Converter={StaticResource LogLevelToSymbolConverter}}" Foreground="{Binding Level, Converter={StaticResource LogLevelToBrushConverter}}" FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0">
+                                    <ToolTipService.ToolTip>
+                                        <ToolTip Content="{Binding Level}"/>
+                                    </ToolTipService.ToolTip>
+                                </FontIcon>
+                                <TextBlock Grid.Column="2" Text="{Binding Category}" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource TextFillColorTertiaryBrush}">
+                                     <ToolTipService.ToolTip>
+                                        <ToolTip Content="{Binding Category}"/>
+                                    </ToolTipService.ToolTip>
+                                </TextBlock>
+                                <TextBlock Grid.Column="3" Text="{Binding Message}" TextWrapping="Wrap" VerticalAlignment="Center" IsTextSelectionEnabled="True" Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
+                            </Grid>
 
-                        <FontIcon Grid.Column="1"
-                                  Glyph="{Binding Level, Converter={StaticResource LogLevelToSymbolConverter}}"
-                                  Foreground="{Binding Level, Converter={StaticResource LogLevelToBrushConverter}}"
-                                  FontFamily="{StaticResource SymbolThemeFontFamily}"
-                                  FontSize="14"
-                                  VerticalAlignment="Top"
-                                  Margin="0,1,6,0">
-                            <ToolTipService.ToolTip>
-                                <ToolTip Content="{Binding Level}"/>
-                            </ToolTipService.ToolTip>
-                        </FontIcon>
-
-                        <TextBlock Grid.Column="2"
-                                   Text="{Binding Category}"
-                                   FontSize="11"
-                                   VerticalAlignment="Top"
-                                   Margin="0,1,8,0"
-                                   MaxWidth="150"
-                                   TextTrimming="CharacterEllipsis"
-                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}">
-                            <ToolTipService.ToolTip>
-                                <ToolTip Content="{Binding Category}"/>
-                            </ToolTipService.ToolTip>
-                        </TextBlock>
-
-                        <TextBlock Grid.Column="3"
-                                   Text="{Binding Message}"
-                                   TextWrapping="Wrap"
-                                   VerticalAlignment="Top"
-                                   IsTextSelectionEnabled="True"
-                                   Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
+                            <TextBlock Text="{Binding Exception}"
+                                       Visibility="{Binding Exception, Converter={StaticResource NullToVisibilityConverter}}"
+                                       TextWrapping="Wrap"
+                                       IsTextSelectionEnabled="True"
+                                       FontSize="10"
+                                       FontFamily="Consolas, Courier New"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                       Margin="250,4,0,0" />
+                        </StackPanel>
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>

@@ -34,13 +34,11 @@ public partial class LogsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial bool ShowError { get; set; } = true;
 
-    public LogsViewModel(ILogger<LogsViewModel> logger, LogViewerService logViewerService)
+    public LogsViewModel(ILogger<LogsViewModel> logger, DispatcherQueue dispatcherQueue, LogViewerService logViewerService)
     {
         _logger = logger;
         _logViewerService = logViewerService;
-        _dispatcherQueue =
-            DispatcherQueue.GetForCurrentThread()
-            ?? throw new InvalidOperationException($"{nameof(LogsViewModel)} must be initialized on the UI thread.");
+        _dispatcherQueue = dispatcherQueue;
 
         _logger.LogInformation("Initializing LogsViewModel.");
         AllLogEntries.CollectionChanged += AllLogEntries_CollectionChanged;

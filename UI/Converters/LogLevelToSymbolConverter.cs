@@ -12,8 +12,8 @@ public partial class LogLevelToSymbolConverter : IValueConverter
             // Using Segoe Fluent Icons hex codes
             return level switch
             {
-                LogLevel.Trace => "\uECCE", // Bug (Treat Trace as Debug)
-                LogLevel.Debug => "\uECCE", // Bug
+                LogLevel.Trace => "\uEBE8", // Bug (Treat Trace as Debug)
+                LogLevel.Debug => "\uEBE8", // Bug
                 LogLevel.Information => "\uE946", // Info
                 LogLevel.Warning => "\uE7BA", // Warning
                 LogLevel.Error => "\uEA39", // ErrorBadge

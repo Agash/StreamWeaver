@@ -149,12 +149,12 @@ public partial class MainChatViewModel : ObservableObject, IRecipient<NewEventMe
              // --- Add 'All Connected' Target ---
              if (connectedTargetsCount > 1)
              {
-                 _logger.LogTrace("Adding 'All Connected' target.");
+                 _logger.LogTrace("Adding 'All' target.");
                  newTargets.Insert(
                      0,
                      new SendTarget
                      {
-                         DisplayName = "All Connected",
+                         DisplayName = "All",
                          Platform = "All",
                          AccountId = null, // Represents 'All'
                          AccountChannelName = null,
