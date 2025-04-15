@@ -28,5 +28,5 @@ jobs:
               run: |
                 dotnet tool install -g vpk
                 vpk download github --repoUrl https://github.com/${{ github.repository }}
-                vpk pack -u StreamWeaver -v ${{ steps.get-version.outputs.version }} -p publish
+                vpk pack -u StreamWeaver -v ${{ steps.get-version.outputs.version }} -p .\bin\win-x64\publish\ -e StreamWeaver.exe
                 vpk upload github --repoUrl https://github.com/${{ github.repository }} --publish --releaseName "StreamWeaver ${{ steps.get-version.outputs.version }}" --tag v${{ steps.get-version.outputs.version }}
