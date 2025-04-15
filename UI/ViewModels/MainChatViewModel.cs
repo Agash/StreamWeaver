@@ -221,6 +221,7 @@ public partial class MainChatViewModel : ObservableObject, IRecipient<NewEventMe
                 _logger.LogWarning("Attempted to add duplicate event with ID {EventId}. Skipping.", message.Value.Id);
                 return;
             }
+
             Events.Add(message.Value);
             _logger.LogTrace("Added event {EventType} ({EventId}) to display collection.", message.Value.GetType().Name, message.Value.Id);
             while (Events.Count > MAX_MESSAGES)
@@ -415,6 +416,7 @@ public partial class MainChatViewModel : ObservableObject, IRecipient<NewEventMe
             _logger.LogWarning("{Action} cancelled: Message, UserID, or OriginatingAccountID is null.", actionName);
             return;
         }
+
         string moderatorAccountId = message.OriginatingAccountId;
         string userIdToTimeout = message.UserId;
         uint durationSeconds = 600; // 10 minutes
@@ -449,6 +451,7 @@ public partial class MainChatViewModel : ObservableObject, IRecipient<NewEventMe
             _logger.LogWarning("{Action} cancelled: Message, UserID, or OriginatingAccountID is null.", actionName);
             return;
         }
+
         string moderatorAccountId = message.OriginatingAccountId;
         string userIdToBan = message.UserId;
 
@@ -481,6 +484,7 @@ public partial class MainChatViewModel : ObservableObject, IRecipient<NewEventMe
             _logger.LogWarning("{Action} cancelled: Message, Message.Id, or OriginatingAccountID is null.", actionName);
             return;
         }
+
         string moderatorAccountId = message.OriginatingAccountId;
         // IMPORTANT: Use the message ID from the event, NOT the originating account ID
         string messageId = message.Id;
@@ -587,6 +591,7 @@ public partial class MainChatViewModel : ObservableObject, IRecipient<NewEventMe
             _logger.LogError("{Action} cannot proceed: ActivePollMessageId is null or empty.", actionName);
             return;
         }
+
         if (SelectedSendTarget == null)
         {
             _logger.LogError("{Action} cannot proceed: No send target selected.", actionName);
@@ -684,7 +689,6 @@ public partial class MainChatViewModel : ObservableObject, IRecipient<NewEventMe
         _logger.LogInformation("Disposed and Unregistered.");
         GC.SuppressFinalize(this);
     }
-
 }
 
 // SendTarget class definition omitted for brevity...

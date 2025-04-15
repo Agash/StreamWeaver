@@ -50,9 +50,7 @@ public partial class MembershipDetailsConverter : IValueConverter
         return details.ToString();
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, string language)
-    {
+    public object ConvertBack(object value, Type targetType, object parameter, string language) =>
         // This converter is one-way.
         throw new NotImplementedException();
-    }
 }

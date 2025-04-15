@@ -44,20 +44,17 @@ public class DonationToBrushConverter : IValueConverter
         return baseBrush;
     }
 
-    private static SolidColorBrush GetSuperChatBrush(decimal amount)
-    {
-        if (amount >= 500)
-            return new SolidColorBrush(Colors.Red);
-        if (amount >= 100)
-            return new SolidColorBrush(Colors.Magenta);
-        if (amount >= 50)
-            return new SolidColorBrush(Colors.Orange);
-        return amount >= 20
+    private static SolidColorBrush GetSuperChatBrush(decimal amount) => amount >= 500
+            ? new SolidColorBrush(Colors.Red)
+            : amount >= 100
+            ? new SolidColorBrush(Colors.Magenta)
+            : amount >= 50
+            ? new SolidColorBrush(Colors.Orange)
+            : amount >= 20
             ? new SolidColorBrush(Colors.Yellow)
             : amount >= 5
             ? new SolidColorBrush(Colors.Green)
             : amount >= 2 ? new SolidColorBrush(Colors.Cyan) : new SolidColorBrush(Colors.Blue);
-    }
 
     private SolidColorBrush GetFallbackBrush()
     {
