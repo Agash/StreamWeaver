@@ -10,26 +10,10 @@ public partial class BoolInverterConverter : IValueConverter
     /// <summary>
     /// Inverts the boolean value.
     /// </summary>
-    public object Convert(object value, Type targetType, object parameter, string language)
-    {
-        if (value is bool b)
-        {
-            return !b;
-        }
-
-        return false;
-    }
+    public object Convert(object value, Type targetType, object parameter, string language) => value is bool b ? !b : (object)false;
 
     /// <summary>
     /// Inverts the boolean value back (same logic).
     /// </summary>
-    public object ConvertBack(object value, Type targetType, object parameter, string language)
-    {
-        if (value is bool b)
-        {
-            return !b;
-        }
-
-        return false;
-    }
+    public object ConvertBack(object value, Type targetType, object parameter, string language) => value is bool b ? !b : (object)false;
 }

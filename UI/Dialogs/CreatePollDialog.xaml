@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="StreamWeaver.UI.Dialogs.CreatePollDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:viewmodels="using:StreamWeaver.UI.ViewModels"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance Type=viewmodels:CreatePollDialogViewModel}"
+    x:Name="CreatePollContentDialog"
+    Title="Create YouTube Poll"
+    PrimaryButtonText="Create"
+    CloseButtonText="Cancel"
+    DefaultButton="Primary"
+    PrimaryButtonClick="ContentDialog_PrimaryButtonClick">
+
+    <ContentDialog.Resources>
+        <Style x:Key="RemoveButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="{ThemeResource SystemControlErrorTextForegroundBrush}"/>
+        </Style>
+    </ContentDialog.Resources>
+
+    <StackPanel Spacing="10" MinWidth="400">
+
+        <InfoBar Title="Error"
+                 Severity="Error"
+                 Message="{Binding ErrorMessage}"
+                 IsOpen="{Binding HasError}"
+                 IsClosable="False"/>
+
+        <TextBox Header="Poll Question (Max 100 chars)"
+                 Text="{Binding Question, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                 MaxLength="100"
+                 TextWrapping="Wrap"
+                 AcceptsReturn="True"
+                 Height="80"/>
+
+        <TextBlock Text="Options (2-5 required, Max 30 chars each)"
+                   Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+
+        <ListView ItemsSource="{Binding Options}"
+                  SelectionMode="None"
+                  MaxHeight="200">
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="viewmodels:PollOptionViewModel">
+                    <Grid ColumnSpacing="5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 MaxLength="30"
+                                 PlaceholderText="Enter option text..."/>
+
+                        <Button Grid.Column="1"
+                                Style="{StaticResource RemoveButtonStyle}"
+                                Command="{Binding DataContext.RemoveOptionCommand, ElementName=CreatePollContentDialog}"
+                            CommandParameter="{Binding}">
+                            <ToolTipService.ToolTip>
+                                <ToolTip Content="Remove this option"/>
+                            </ToolTipService.ToolTip>
+                            <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="" FontSize="14"/>
+                        </Button>
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+        <Button Content="Add Option"
+                HorizontalAlignment="Left"
+                Command="{Binding AddOptionCommand}">
+            <ToolTipService.ToolTip>
+                <ToolTip Content="Add another poll option (max 5)"/>
+            </ToolTipService.ToolTip>
+        </Button>
+    </StackPanel>
+</ContentDialog>

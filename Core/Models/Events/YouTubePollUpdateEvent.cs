@@ -29,8 +29,5 @@ public class YouTubePollUpdateEvent : BaseEvent
     /// </summary>
     public bool IsActive { get; init; }
 
-    public YouTubePollUpdateEvent()
-    {
-        Platform = "YouTube";
-    }
+    public YouTubePollUpdateEvent() => Platform = "YouTube";
 }

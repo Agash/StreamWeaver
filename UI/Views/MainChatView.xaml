@@ -38,287 +38,174 @@
         <converters:AutoHostTextConverter x:Key="AutoHostTextConverter"/>
         <converters:IntToVisibilityConverter x:Key="IntToVisibilityConverter"/>
         <converters:DonationToBrushConverter x:Key="DonationBorderBrushConverter"/>
-        <converters:DonationToBrushConverter x:Key="DonationBackgroundBrushConverter"
-                                             IsBackgroundConverter="True"/>
+        <converters:DonationToBrushConverter x:Key="DonationBackgroundBrushConverter" IsBackgroundConverter="True"/>
         <converters:PlatformToVisibilityConverter x:Key="PlatformToVisibilityConverter"/>
         <converters:PlatformToMarginConverter x:Key="PlatformToMarginConverter"/>
         <converters:PlatformToIsEnabledConverter x:Key="PlatformToIsEnabledConverter"/>
+        <!-- ## START ADDITION ## -->
+        <converters:MembershipDetailsConverter x:Key="MembershipDetailsConverter"/>
+        <!-- ## END ADDITION ## -->
 
-        <Style x:Key="ProfilePictureStyle"
-               TargetType="Image">
-            <Setter Property="Width"
-                    Value="36"/>
-            <Setter Property="Height"
-                    Value="36"/>
-            <Setter Property="Margin"
-                    Value="0,0,6,0"/>
-            <Setter Property="VerticalAlignment"
-                    Value="Top"/>
-            <Setter Property="Stretch"
-                    Value="UniformToFill"/>
-        </Style>
-        <Style TargetType="Ellipse"
-               x:Key="ProfilePictureEllipseStyle">
-            <Setter Property="Width"
-                    Value="36"/>
-            <Setter Property="Height"
-                    Value="36"/>
-            <Setter Property="Margin"
-                    Value="0,0,6,0"/>
-            <Setter Property="VerticalAlignment"
-                    Value="Top"/>
-            <Setter Property="Stroke"
-                    Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
-            <Setter Property="StrokeThickness"
-                    Value="1"/>
-        </Style>
-        <SolidColorBrush x:Key="DefaultProfilePicFallbackBrush"
-                         Color="{ThemeResource SystemAccentColor}"/>
 
-        <Style x:Key="MoreButtonStyle"
-               TargetType="Button">
-            <Setter Property="Background"
-                    Value="Transparent"/>
-            <Setter Property="Foreground"
-                    Value="{ThemeResource ButtonForeground}"/>
-            <Setter Property="BorderThickness"
-                    Value="0"/>
-            <Setter Property="Padding"
-                    Value="4"/>
-            <Setter Property="MinWidth"
-                    Value="0"/>
-            <Setter Property="MinHeight"
-                    Value="0"/>
-            <Setter Property="VerticalAlignment"
-                    Value="Center"/>
-            <Setter Property="HorizontalAlignment"
-                    Value="Right"/>
+        <!-- Styles omitted for brevity... -->
+        <Style x:Key="ProfilePictureStyle" TargetType="Image">
+            <Setter Property="Width" Value="36"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+            <Setter Property="Stretch" Value="UniformToFill"/>
+        </Style>
+        <Style TargetType="Ellipse" x:Key="ProfilePictureEllipseStyle">
+            <Setter Property="Width" Value="36"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+            <Setter Property="Stroke" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
+            <Setter Property="StrokeThickness" Value="1"/>
+        </Style>
+        <SolidColorBrush x:Key="DefaultProfilePicFallbackBrush" Color="{ThemeResource SystemAccentColor}"/>
+        <Style x:Key="MoreButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{ThemeResource ButtonForeground}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Grid x:Name="RootGrid"
-                              Background="{TemplateBinding Background}">
+                        <Grid x:Name="RootGrid" Background="{TemplateBinding Background}">
                             <VisualStateManager.VisualStateGroups>
                                 <VisualStateGroup x:Name="CommonStates">
                                     <VisualState x:Name="Normal"/>
                                     <VisualState x:Name="PointerOver">
                                         <Storyboard>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid"
-                                                                           Storyboard.TargetProperty="Background">
-                                                <DiscreteObjectKeyFrame KeyTime="0"
-                                                                        Value="{ThemeResource ButtonBackgroundPointerOver}"/>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource ButtonBackgroundPointerOver}"/>
                                             </ObjectAnimationUsingKeyFrames>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentGlyph"
-                                                                           Storyboard.TargetProperty="Foreground">
-                                                <DiscreteObjectKeyFrame KeyTime="0"
-                                                                        Value="{ThemeResource ButtonForegroundPointerOver}"/>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentGlyph" Storyboard.TargetProperty="Foreground">
+                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource ButtonForegroundPointerOver}"/>
                                             </ObjectAnimationUsingKeyFrames>
                                         </Storyboard>
                                     </VisualState>
                                     <VisualState x:Name="Pressed">
                                         <Storyboard>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid"
-                                                                           Storyboard.TargetProperty="Background">
-                                                <DiscreteObjectKeyFrame KeyTime="0"
-                                                                        Value="{ThemeResource ButtonBackgroundPressed}"/>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource ButtonBackgroundPressed}"/>
                                             </ObjectAnimationUsingKeyFrames>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentGlyph"
-                                                                           Storyboard.TargetProperty="Foreground">
-                                                <DiscreteObjectKeyFrame KeyTime="0"
-                                                                        Value="{ThemeResource ButtonForegroundPressed}"/>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentGlyph" Storyboard.TargetProperty="Foreground">
+                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource ButtonForegroundPressed}"/>
                                             </ObjectAnimationUsingKeyFrames>
                                         </Storyboard>
                                     </VisualState>
                                     <VisualState x:Name="Disabled">
                                         <Storyboard>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentGlyph"
-                                                                           Storyboard.TargetProperty="Foreground">
-                                                <DiscreteObjectKeyFrame KeyTime="0"
-                                                                        Value="{ThemeResource ButtonForegroundDisabled}"/>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentGlyph" Storyboard.TargetProperty="Foreground">
+                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource ButtonForegroundDisabled}"/>
                                             </ObjectAnimationUsingKeyFrames>
                                         </Storyboard>
                                     </VisualState>
                                 </VisualStateGroup>
                             </VisualStateManager.VisualStateGroups>
-
-                            <FontIcon x:Name="ContentGlyph"
-                                      FontFamily="{StaticResource SymbolThemeFontFamily}"
-                                      Glyph=""
-                                      FontSize="14"
-                                      VerticalAlignment="Center"
-                                      HorizontalAlignment="Center"
-                                      Foreground="{TemplateBinding Foreground}"/>
+                            <FontIcon x:Name="ContentGlyph" FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="" FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="{TemplateBinding Foreground}"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="SubtleIconButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid x:Name="RootGrid" Background="{TemplateBinding Background}">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal"/>
+                                    <VisualState x:Name="PointerOver">
+                                        <Storyboard>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource ButtonBackgroundPointerOver}"/>
+                                            </ObjectAnimationUsingKeyFrames>
+                                        </Storyboard>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <Storyboard>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource ButtonBackgroundPressed}"/>
+                                            </ObjectAnimationUsingKeyFrames>
+                                        </Storyboard>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <Storyboard>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                                                <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent"/>
+                                            </ObjectAnimationUsingKeyFrames>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentPresenter" Storyboard.TargetProperty="Foreground">
+                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource ButtonForegroundDisabled}"/>
+                                            </ObjectAnimationUsingKeyFrames>
+                                        </Storyboard>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <ContentPresenter x:Name="ContentPresenter" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"/>
                         </Grid>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
 
-        <Style x:Key="SubtleIconButton"
-               TargetType="Button">
-            <Setter Property="Background"
-                    Value="Transparent"/>
-            <Setter Property="BorderThickness"
-                    Value="0"/>
-            <Setter Property="Padding"
-                    Value="4"/>
-            <Setter Property="MinWidth"
-                    Value="0"/>
-            <Setter Property="MinHeight"
-                    Value="0"/>
-            <Setter Property="VerticalAlignment"
-                    Value="Center"/>
-            <Setter Property="HorizontalAlignment"
-                    Value="Center"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Grid x:Name="RootGrid"
-                              Background="{TemplateBinding Background}">
-                            <VisualStateManager.VisualStateGroups>
-                                <VisualStateGroup x:Name="CommonStates">
-                                    <VisualState x:Name="Normal"/>
-                                    <VisualState x:Name="PointerOver">
-                                        <Storyboard>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid"
-                                                                           Storyboard.TargetProperty="Background">
-                                                <DiscreteObjectKeyFrame KeyTime="0"
-                                                                        Value="{ThemeResource ButtonBackgroundPointerOver}"/>
-                                            </ObjectAnimationUsingKeyFrames>
-                                        </Storyboard>
-                                    </VisualState>
-                                    <VisualState x:Name="Pressed">
-                                        <Storyboard>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid"
-                                                                           Storyboard.TargetProperty="Background">
-                                                <DiscreteObjectKeyFrame KeyTime="0"
-                                                                        Value="{ThemeResource ButtonBackgroundPressed}"/>
-                                            </ObjectAnimationUsingKeyFrames>
-                                        </Storyboard>
-                                    </VisualState>
-                                    <VisualState x:Name="Disabled">
-                                        <Storyboard>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid"
-                                                                           Storyboard.TargetProperty="Background">
-                                                <DiscreteObjectKeyFrame KeyTime="0"
-                                                                        Value="Transparent"/>
-                                            </ObjectAnimationUsingKeyFrames>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentPresenter"
-                                                                           Storyboard.TargetProperty="Foreground">
-                                                <DiscreteObjectKeyFrame KeyTime="0"
-                                                                        Value="{ThemeResource ButtonForegroundDisabled}"/>
-                                            </ObjectAnimationUsingKeyFrames>
-                                        </Storyboard>
-                                    </VisualState>
-                                </VisualStateGroup>
-                            </VisualStateManager.VisualStateGroups>
-                            <ContentPresenter x:Name="ContentPresenter"
-                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                              Content="{TemplateBinding Content}"
-                                              Foreground="{TemplateBinding Foreground}"/>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <DataTemplate x:Key="ChatMessageDataTemplate"
-                      x:DataType="models_events:ChatMessageEvent">
-            <Grid Margin="0,2"
-                  Padding="4">
+        <!-- DataTemplates -->
+        <DataTemplate x:Key="ChatMessageDataTemplate" x:DataType="models_events:ChatMessageEvent">
+            <Grid Margin="0,2" Padding="4">
                 <VisualStateManager.VisualStateGroups>
                     <VisualStateGroup x:Name="CommonStates">
                         <VisualState x:Name="Normal"/>
                         <VisualState x:Name="PointerOver">
                             <Storyboard>
-                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverBackground"
-                                                               Storyboard.TargetProperty="Opacity">
-                                    <DiscreteObjectKeyFrame KeyTime="0"
-                                                            Value="0.1"/>
+                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverBackground" Storyboard.TargetProperty="Opacity">
+                                    <DiscreteObjectKeyFrame KeyTime="0" Value="0.1"/>
                                 </ObjectAnimationUsingKeyFrames>
                             </Storyboard>
                         </VisualState>
                     </VisualStateGroup>
                 </VisualStateManager.VisualStateGroups>
-
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
-                    <!-- Profile Picture -->
                     <ColumnDefinition Width="*"/>
-                    <!-- Content -->
                     <ColumnDefinition Width="Auto"/>
-                    <!-- More Button Column -->
                 </Grid.ColumnDefinitions>
-
-                <Border x:Name="HoverBackground"
-                        Background="{ThemeResource SystemControlHighlightListLowBrush}"
-                        CornerRadius="2"
-                        Opacity="0"
-                        Grid.ColumnSpan="3"/>
-                <!-- Span across all columns -->
-
-                <!-- Profile Picture -->
-                <Ellipse Grid.Column="0"
-                         Style="{StaticResource ProfilePictureEllipseStyle}"
-                         Visibility="{Binding Platform, Converter={StaticResource PlatformToVisibilityConverter}}">
+                <Border x:Name="HoverBackground" Background="{ThemeResource SystemControlHighlightListLowBrush}" CornerRadius="2" Opacity="0" Grid.ColumnSpan="3"/>
+                <Ellipse Grid.Column="0" Style="{StaticResource ProfilePictureEllipseStyle}" Visibility="{Binding Platform, Converter={StaticResource PlatformToVisibilityConverter}}">
                     <Ellipse.Fill>
-                        <ImageBrush ImageSource="{Binding ProfileImageUrl, FallbackValue={StaticResource DefaultProfilePicFallbackBrush}}"
-                                    Stretch="UniformToFill"/>
+                        <ImageBrush ImageSource="{Binding ProfileImageUrl, FallbackValue={StaticResource DefaultProfilePicFallbackBrush}}" Stretch="UniformToFill"/>
                     </Ellipse.Fill>
                 </Ellipse>
-
-                <!-- Content Container -->
-                <Grid Grid.Column="1"
-                      Margin="{Binding Platform, Converter={StaticResource PlatformToMarginConverter}}">
-                    <RichTextBlock helpers:RichTextBlockEventHelper.ChatEventSource="{Binding}"
-                                   TextWrapping="Wrap"
-                                   VerticalAlignment="Top"
-                                   IsTextSelectionEnabled="True"
-                                   FontSize="{ThemeResource ControlContentThemeFontSize}">
+                <Grid Grid.Column="1" Margin="{Binding Platform, Converter={StaticResource PlatformToMarginConverter}}">
+                    <RichTextBlock helpers:RichTextBlockEventHelper.ChatEventSource="{Binding}" TextWrapping="Wrap" VerticalAlignment="Top" IsTextSelectionEnabled="True" FontSize="{ThemeResource ControlContentThemeFontSize}">
                         <RichTextBlock.Resources>
                             <Style TargetType="Paragraph">
-                                <Setter Property="Margin"
-                                        Value="0"/>
+                                <Setter Property="Margin" Value="0"/>
                             </Style>
                         </RichTextBlock.Resources>
                     </RichTextBlock>
-                    <Border Background="{ThemeResource SystemControlHighlightAccentBrush}"
-                            Opacity="0.1"
-                            CornerRadius="2"
-                            Margin="-2"
-                            IsHitTestVisible="False"
-                            Visibility="{Binding IsHighlight, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                    <Border Background="{ThemeResource SystemControlHighlightAccentBrush}" Opacity="0.1" CornerRadius="2" Margin="-2" IsHitTestVisible="False" Visibility="{Binding IsHighlight, Converter={StaticResource BoolToVisibilityConverter}}"/>
                 </Grid>
-
-                <!-- More Button -->
-                <Button Grid.Column="2"
-                        Style="{StaticResource MoreButtonStyle}"
-                        DataContext="{Binding}"
-                        IsEnabled="{Binding Platform, Converter={StaticResource PlatformToIsEnabledConverter}}">
+                <Button Grid.Column="2" Style="{StaticResource MoreButtonStyle}" DataContext="{Binding}" IsEnabled="{Binding Platform, Converter={StaticResource PlatformToIsEnabledConverter}}">
                     <Button.Flyout>
                         <MenuFlyout>
-                            <MenuFlyoutItem Text="Pin Message"
-                                            Icon="Pin"
-                                            IsEnabled="{Binding Platform, Converter={StaticResource PlatformToIsEnabledConverter}}"
-                                            Command="{Binding DataContext.PinMessageCommand, ElementName=ChatListView}"
-                                            CommandParameter="{Binding}"/>
-                            <MenuFlyoutItem Text="Timeout User (10m)"
-                                            Icon="Clock"
-                                            IsEnabled="{Binding Platform, Converter={StaticResource PlatformToIsEnabledConverter}}"
-                                            Command="{Binding DataContext.TimeoutUserCommand, ElementName=ChatListView}"
-                                            CommandParameter="{Binding}"/>
-                            <MenuFlyoutItem Text="Ban User"
-                                            Icon="BlockContact"
-                                            IsEnabled="{Binding Platform, Converter={StaticResource PlatformToIsEnabledConverter}}"
-                                            Command="{Binding DataContext.BanUserCommand, ElementName=ChatListView}"
-                                            CommandParameter="{Binding}"/>
+                            <MenuFlyoutItem Text="Timeout User (10m)" Icon="Clock" IsEnabled="{Binding Platform, Converter={StaticResource PlatformToIsEnabledConverter}}" Command="{Binding DataContext.TimeoutUserCommand, ElementName=ChatListView}" CommandParameter="{Binding}"/>
+                            <MenuFlyoutItem Text="Ban User" Icon="BlockContact" IsEnabled="{Binding Platform, Converter={StaticResource PlatformToIsEnabledConverter}}" Command="{Binding DataContext.BanUserCommand, ElementName=ChatListView}" CommandParameter="{Binding}"/>
                             <MenuFlyoutSeparator/>
-                            <MenuFlyoutItem Text="Delete Message"
-                                            Icon="Delete"
-                                            IsEnabled="{Binding Platform, Converter={StaticResource PlatformToIsEnabledConverter}}"
-                                            Command="{Binding DataContext.DeleteMessageCommand, ElementName=ChatListView}"
-                                            CommandParameter="{Binding}"/>
+                            <MenuFlyoutItem Text="Delete Message" Icon="Delete" IsEnabled="{Binding Platform, Converter={StaticResource PlatformToIsEnabledConverter}}" Command="{Binding DataContext.DeleteMessageCommand, ElementName=ChatListView}" CommandParameter="{Binding}"/>
                         </MenuFlyout>
                     </Button.Flyout>
                     <ToolTipService.ToolTip>
@@ -327,72 +214,31 @@
                 </Button>
             </Grid>
         </DataTemplate>
-        <DataTemplate x:Key="DonationDataTemplate"
-                      x:DataType="models_events:DonationEvent">
-            <Border Background="{Binding Converter={StaticResource DonationBackgroundBrushConverter}}"
-                    BorderBrush="{Binding Converter={StaticResource DonationBorderBrushConverter}}"
-                    BorderThickness="1"
-                    CornerRadius="4"
-                    Margin="0,2">
+        <DataTemplate x:Key="DonationDataTemplate" x:DataType="models_events:DonationEvent">
+            <Border Background="{Binding Converter={StaticResource DonationBackgroundBrushConverter}}" BorderBrush="{Binding Converter={StaticResource DonationBorderBrushConverter}}" BorderThickness="1" CornerRadius="4" Margin="0,2">
                 <Grid Padding="0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
-                        <!-- Profile Picture -->
                         <ColumnDefinition Width="*"/>
-                        <!-- Content -->
                     </Grid.ColumnDefinitions>
-
-                    <!-- Profile Picture (Visible only for YouTube) -->
-                    <Ellipse Grid.Column="0"
-                             Margin="6,4,0,4"
-                             Style="{StaticResource ProfilePictureEllipseStyle}"
-                             Visibility="{Binding Platform, Converter={StaticResource PlatformToVisibilityConverter}}">
+                    <Ellipse Grid.Column="0" Margin="6,4,0,4" Style="{StaticResource ProfilePictureEllipseStyle}" Visibility="{Binding Platform, Converter={StaticResource PlatformToVisibilityConverter}}">
                         <Ellipse.Fill>
-                            <ImageBrush ImageSource="{Binding ProfileImageUrl, FallbackValue={StaticResource DefaultProfilePicFallbackBrush}}"
-                                        Stretch="UniformToFill"/>
+                            <ImageBrush ImageSource="{Binding ProfileImageUrl, FallbackValue={StaticResource DefaultProfilePicFallbackBrush}}" Stretch="UniformToFill"/>
                         </Ellipse.Fill>
                     </Ellipse>
-
-                    <!-- Main Content Stack -->
                     <StackPanel Grid.Column="1">
-                        <!-- Header (SuperChat/Sticker/Default) -->
-                        <Border x:Name="DonationHeaderBorder"
-                                Padding="6,4"
-                                CornerRadius="4,4,0,0"
-                                Background="{Binding HeaderBackgroundColor, Converter={StaticResource StringToBrushConverter}, FallbackValue={ThemeResource LayerFillColorDefaultBrush}}"
-                                BorderThickness="0,0,0,1"
-                                BorderBrush="{Binding BodyBackgroundColor, Converter={StaticResource StringToBrushConverter}, FallbackValue={ThemeResource CardStrokeColorDefaultBrush}}">
+                        <Border x:Name="DonationHeaderBorder" Padding="6,4" CornerRadius="4,4,0,0" Background="{Binding HeaderBackgroundColor, Converter={StaticResource StringToBrushConverter}, FallbackValue={ThemeResource LayerFillColorDefaultBrush}}" BorderThickness="0,0,0,1" BorderBrush="{Binding BodyBackgroundColor, Converter={StaticResource StringToBrushConverter}, FallbackValue={ThemeResource CardStrokeColorDefaultBrush}}">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
-                                    <!-- Timestamp -->
                                     <ColumnDefinition Width="Auto"/>
-                                    <!-- Platform Icon -->
                                     <ColumnDefinition Width="Auto"/>
-                                    <!-- Badges -->
                                     <ColumnDefinition Width="*"/>
-                                    <!-- Username -->
                                     <ColumnDefinition Width="Auto"/>
-                                    <!-- Amount -->
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0"
-                                           Text="{Binding Timestamp, Converter={StaticResource DateTimeFormatConverter}, ConverterParameter='HH:mm'}"
-                                           FontSize="10"
-                                           VerticalAlignment="Center"
-                                           Margin="0,0,5,0"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                                <FontIcon Grid.Column="1"
-                                          FontFamily="Segoe Fluent Icons"
-                                          FontSize="14"
-                                          Margin="0,0,6,0"
-                                          VerticalAlignment="Center"
-                                          Glyph="{Binding Platform, Converter={StaticResource PlatformToIconConverter}}"
-                                          Foreground="{Binding Platform, Converter={StaticResource PlatformToBrushConverter}}"/>
-                                <!-- Badges -->
-                                <ItemsControl Grid.Column="2"
-                                              ItemsSource="{Binding Badges}"
-                                              VerticalAlignment="Center"
-                                              Margin="0,0,4,0">
+                                <TextBlock Grid.Column="0" Text="{Binding Timestamp, Converter={StaticResource DateTimeFormatConverter}, ConverterParameter='HH:mm'}" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                <FontIcon Grid.Column="1" FontFamily="Segoe Fluent Icons" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center" Glyph="{Binding Platform, Converter={StaticResource PlatformToIconConverter}}" Foreground="{Binding Platform, Converter={StaticResource PlatformToBrushConverter}}"/>
+                                <ItemsControl Grid.Column="2" ItemsSource="{Binding Badges}" VerticalAlignment="Center" Margin="0,0,4,0">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <StackPanel Orientation="Horizontal"/>
@@ -400,11 +246,7 @@
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="models_events:BadgeInfo">
-                                            <Image Source="{Binding Converter={StaticResource BadgeInfoToImageSourceConverter}}"
-                                                   Height="18"
-                                                   Width="18"
-                                                   Margin="0,0,2,0"
-                                                   VerticalAlignment="Center">
+                                            <Image Source="{Binding Converter={StaticResource BadgeInfoToImageSourceConverter}}" Height="18" Width="18" Margin="0,0,2,0" VerticalAlignment="Center">
                                                 <ToolTipService.ToolTip>
                                                     <ToolTip Content="{Binding Identifier}"/>
                                                 </ToolTipService.ToolTip>
@@ -412,49 +254,21 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                                <!-- Username -->
-                                <TextBlock Grid.Column="3"
-                                           Text="{Binding Username}"
-                                           FontWeight="SemiBold"
-                                           VerticalAlignment="Center"
-                                           Foreground="{Binding AuthorNameTextColor, Converter={StaticResource StringToBrushConverter}, FallbackValue={ThemeResource TextFillColorPrimaryBrush}}"/>
-                                <!-- Amount -->
-                                <TextBlock Grid.Column="4"
-                                           Text="{Binding FormattedAmount}"
-                                           FontWeight="Bold"
-                                           VerticalAlignment="Center"
-                                           HorizontalAlignment="Right"
-                                           Foreground="{Binding HeaderTextColor, Converter={StaticResource StringToBrushConverter}, FallbackValue={ThemeResource TextFillColorPrimaryBrush}}"/>
+                                <TextBlock Grid.Column="3" Text="{Binding Username}" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{Binding AuthorNameTextColor, Converter={StaticResource StringToBrushConverter}, FallbackValue={ThemeResource TextFillColorPrimaryBrush}}"/>
+                                <TextBlock Grid.Column="4" Text="{Binding FormattedAmount}" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="{Binding HeaderTextColor, Converter={StaticResource StringToBrushConverter}, FallbackValue={ThemeResource TextFillColorPrimaryBrush}}"/>
                             </Grid>
                         </Border>
-                        <!-- Body (SuperChat/Sticker/Default Message) -->
-                        <Border x:Name="DonationBodyBorder"
-                                Padding="6,4"
-                                CornerRadius="0,0,4,4"
-                                Background="{Binding BodyBackgroundColor, Converter={StaticResource StringToBrushConverter}, FallbackValue=Transparent}">
+                        <Border x:Name="DonationBodyBorder" Padding="6,4" CornerRadius="0,0,4,4" Background="{Binding BodyBackgroundColor, Converter={StaticResource StringToBrushConverter}, FallbackValue=Transparent}">
                             <StackPanel>
-                                <!-- Super Sticker Image (Visible only if StickerImageUrl exists) -->
-                                <Image Source="{Binding StickerImageUrl}"
-                                       Stretch="Uniform"
-                                       MaxHeight="80"
-                                       HorizontalAlignment="Left"
-                                       Margin="0,4,0,4"
-                                       Visibility="{Binding StickerImageUrl, Converter={StaticResource StringToVisibilityConverter}}">
+                                <Image Source="{Binding StickerImageUrl}" Stretch="Uniform" MaxHeight="80" HorizontalAlignment="Left" Margin="0,4,0,4" Visibility="{Binding StickerImageUrl, Converter={StaticResource StringToVisibilityConverter}}">
                                     <ToolTipService.ToolTip>
                                         <ToolTip Content="{Binding StickerAltText}"/>
                                     </ToolTipService.ToolTip>
                                 </Image>
-                                <!-- Message Body (Use RichTextBlock for consistency) -->
-                                <RichTextBlock helpers:RichTextBlockHelper.SegmentsSource="{Binding ParsedMessage}"
-                                               TextWrapping="Wrap"
-                                               IsTextSelectionEnabled="True"
-                                               Margin="0,4,0,0"
-                                               Foreground="{Binding BodyTextColor, Converter={StaticResource StringToBrushConverter}, FallbackValue={ThemeResource TextFillColorPrimaryBrush}}"
-                                               Visibility="{Binding ParsedMessage.Count, Converter={StaticResource IntToVisibilityConverter}}">
+                                <RichTextBlock helpers:RichTextBlockHelper.SegmentsSource="{Binding ParsedMessage}" TextWrapping="Wrap" IsTextSelectionEnabled="True" Margin="0,4,0,0" Foreground="{Binding BodyTextColor, Converter={StaticResource StringToBrushConverter}, FallbackValue={ThemeResource TextFillColorPrimaryBrush}}" Visibility="{Binding ParsedMessage.Count, Converter={StaticResource IntToVisibilityConverter}}">
                                     <RichTextBlock.Resources>
                                         <Style TargetType="Paragraph">
-                                            <Setter Property="Margin"
-                                                    Value="0"/>
+                                            <Setter Property="Margin" Value="0"/>
                                         </Style>
                                     </RichTextBlock.Resources>
                                 </RichTextBlock>
@@ -464,64 +278,29 @@
                 </Grid>
             </Border>
         </DataTemplate>
-        <DataTemplate x:Key="MembershipDataTemplate"
-                      x:DataType="models_events:MembershipEvent">
-            <!-- Base Border - Customize colors -->
-            <Border Background="#1A0F9D58"
-                    BorderBrush="#FF0F9D58"
-                    CornerRadius="4"
-                    BorderThickness="1"
-                    Margin="0,2">
+        <DataTemplate x:Key="MembershipDataTemplate" x:DataType="models_events:MembershipEvent">
+            <Border Background="#1A0F9D58" BorderBrush="#FF0F9D58" CornerRadius="4" BorderThickness="1" Margin="0,2">
                 <Grid Padding="6,4">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
-                        <!-- Profile Picture -->
                         <ColumnDefinition Width="*"/>
-                        <!-- Content -->
                     </Grid.ColumnDefinitions>
-
-                    <!-- Profile Picture (YouTube Only) -->
-                    <Ellipse Grid.Column="0"
-                             Style="{StaticResource ProfilePictureEllipseStyle}">
+                    <Ellipse Grid.Column="0" Style="{StaticResource ProfilePictureEllipseStyle}">
                         <Ellipse.Fill>
-                            <ImageBrush ImageSource="{Binding ProfileImageUrl, FallbackValue={StaticResource DefaultProfilePicFallbackBrush}}"
-                                        Stretch="UniformToFill"/>
+                            <ImageBrush ImageSource="{Binding ProfileImageUrl, FallbackValue={StaticResource DefaultProfilePicFallbackBrush}}" Stretch="UniformToFill"/>
                         </Ellipse.Fill>
                     </Ellipse>
-
-                    <!-- Content -->
-                    <StackPanel Grid.Column="1"
-                                Spacing="4">
-                        <!-- Header Line -->
+                    <StackPanel Grid.Column="1" Spacing="4">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
-                                <!-- Timestamp -->
                                 <ColumnDefinition Width="Auto"/>
-                                <!-- Platform Icon -->
                                 <ColumnDefinition Width="Auto"/>
-                                <!-- Badges -->
                                 <ColumnDefinition Width="*"/>
-                                <!-- Header Text -->
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0"
-                                       Text="{Binding Timestamp, Converter={StaticResource DateTimeFormatConverter}, ConverterParameter='HH:mm'}"
-                                       FontSize="10"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,5,0"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                            <FontIcon Grid.Column="1"
-                                      FontFamily="Segoe Fluent Icons"
-                                      FontSize="14"
-                                      Margin="0,0,6,0"
-                                      VerticalAlignment="Center"
-                                      Glyph=""
-                                      Foreground="{Binding Platform, Converter={StaticResource PlatformToBrushConverter}}"/>
-                            <!-- Badges -->
-                            <ItemsControl Grid.Column="2"
-                                          ItemsSource="{Binding Badges}"
-                                          VerticalAlignment="Center"
-                                          Margin="0,0,4,0">
+                            <TextBlock Grid.Column="0" Text="{Binding Timestamp, Converter={StaticResource DateTimeFormatConverter}, ConverterParameter='HH:mm'}" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <FontIcon Grid.Column="1" FontFamily="Segoe Fluent Icons" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center" Glyph="" Foreground="{Binding Platform, Converter={StaticResource PlatformToBrushConverter}}"/>
+                            <ItemsControl Grid.Column="2" ItemsSource="{Binding Badges}" VerticalAlignment="Center" Margin="0,0,4,0">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <StackPanel Orientation="Horizontal"/>
@@ -529,11 +308,7 @@
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="models_events:BadgeInfo">
-                                        <Image Source="{Binding Converter={StaticResource BadgeInfoToImageSourceConverter}}"
-                                               Height="18"
-                                               Width="18"
-                                               Margin="0,0,2,0"
-                                               VerticalAlignment="Center">
+                                        <Image Source="{Binding Converter={StaticResource BadgeInfoToImageSourceConverter}}" Height="18" Width="18" Margin="0,0,2,0" VerticalAlignment="Center">
                                             <ToolTipService.ToolTip>
                                                 <ToolTip Content="{Binding Identifier}"/>
                                             </ToolTipService.ToolTip>
@@ -541,47 +316,21 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
-                            <!-- Header Text (Main System Message) -->
-                            <TextBlock Grid.Column="3"
-                                       FontWeight="SemiBold"
-                                       TextWrapping="Wrap"
-                                       VerticalAlignment="Center"
-                                       Foreground="{Binding UsernameColor, Converter={StaticResource StringToBrushConverter}, FallbackValue={ThemeResource TextFillColorPrimaryBrush}}">
-                                <Run Text="{Binding Username}"/><Run Text=" "/><!-- Display Username (Member/Gifter) -->
-                                <Run Text="{Binding HeaderText}"
-                                     FontStyle="Italic"/><!-- The system message -->
+                            <TextBlock Grid.Column="3" FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center" Foreground="{Binding UsernameColor, Converter={StaticResource StringToBrushConverter}, FallbackValue={ThemeResource TextFillColorPrimaryBrush}}">
+                                <Run Text="{Binding Username}"/><Run Text=" "/>
+                                <Run Text="{Binding HeaderText}" FontStyle="Italic"/>
                             </TextBlock>
                         </Grid>
-
-                        <!-- Additional Details (Level, Milestone, Gift Info) -->
-                        <TextBlock FontSize="11"
+                        <TextBlock x:Name="MembershipDetailsTextBlock"
+                                   FontSize="11"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   TextWrapping="Wrap">
-                            <Run Text="Level:"
-                                 FontWeight="SemiBold"/>
-                            <Run Text="{Binding LevelName}"/><Run Text=" "/>
-                            <Run Text="Months:"
-                                 FontWeight="SemiBold"/>
-                            <Run Text="{Binding MilestoneMonths}"/><Run Text=" "/>
-                            <Run Text="Gifter:"
-                                 FontWeight="SemiBold"/>
-                            <Run Text="{Binding GifterUsername}"/><Run Text=" "/>
-                            <Run Text="Count:"
-                                 FontWeight="SemiBold"/>
-                            <Run Text="{Binding GiftCount}"/>
-                        </TextBlock>
-
-                        <!-- User Comment (Milestone Message) -->
-                        <RichTextBlock helpers:RichTextBlockHelper.SegmentsSource="{Binding ParsedMessage}"
-                                       TextWrapping="Wrap"
-                                       IsTextSelectionEnabled="True"
-                                       Margin="0,4,0,0"
-                                       FontSize="{ThemeResource ControlContentThemeFontSize}"
-                                       Visibility="{Binding ParsedMessage.Count, Converter={StaticResource IntToVisibilityConverter}}">
+                                   TextWrapping="Wrap"
+                                   Text="{Binding Converter={StaticResource MembershipDetailsConverter}}"
+                                   Visibility="{Binding Text, ElementName=MembershipDetailsTextBlock, Converter={StaticResource StringToVisibilityConverter}}"/>
+                        <RichTextBlock helpers:RichTextBlockHelper.SegmentsSource="{Binding ParsedMessage}" TextWrapping="Wrap" IsTextSelectionEnabled="True" Margin="0,4,0,0" FontSize="{ThemeResource ControlContentThemeFontSize}" Visibility="{Binding ParsedMessage.Count, Converter={StaticResource IntToVisibilityConverter}}">
                             <RichTextBlock.Resources>
                                 <Style TargetType="Paragraph">
-                                    <Setter Property="Margin"
-                                            Value="0"/>
+                                    <Setter Property="Margin" Value="0"/>
                                 </Style>
                             </RichTextBlock.Resources>
                         </RichTextBlock>
@@ -589,43 +338,19 @@
                 </Grid>
             </Border>
         </DataTemplate>
-        <DataTemplate x:Key="SubscriptionDataTemplate"
-                      x:DataType="models_events:SubscriptionEvent">
-            <Border Background="#108A2BE2"
-                    BorderBrush="#FF8A2BE2"
-                    BorderThickness="1,0,0,0"
-                    Margin="0,2"
-                    Padding="4,2">
-                <!-- Adjusted padding -->
+        <!-- Other DataTemplates omitted for brevity -->
+        <DataTemplate x:Key="SubscriptionDataTemplate" x:DataType="models_events:SubscriptionEvent">
+            <Border Background="#108A2BE2" BorderBrush="#FF8A2BE2" BorderThickness="1,0,0,0" Margin="0,2" Padding="4,2">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
-                        <!-- Timestamp -->
                         <ColumnDefinition Width="Auto"/>
-                        <!-- Platform Icon -->
                         <ColumnDefinition Width="Auto"/>
-                        <!-- Badges -->
                         <ColumnDefinition Width="*"/>
-                        <!-- Message -->
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding Timestamp, Converter={StaticResource DateTimeFormatConverter}, ConverterParameter='HH:mm'}"
-                               FontSize="10"
-                               VerticalAlignment="Center"
-                               Margin="42,0,5,0"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                    <!-- Added Left Margin 42 -->
-                    <FontIcon Grid.Column="1"
-                              FontFamily="Segoe Fluent Icons"
-                              FontSize="14"
-                              Margin="0,0,6,0"
-                              VerticalAlignment="Center"
-                              Glyph=""
-                              Foreground="{Binding Platform, Converter={StaticResource PlatformToBrushConverter}}"/>
-                    <ItemsControl Grid.Column="2"
-                                  ItemsSource="{Binding Badges}"
-                                  VerticalAlignment="Center"
-                                  Margin="0,0,4,0">
+                    <TextBlock Grid.Column="0" Text="{Binding Timestamp, Converter={StaticResource DateTimeFormatConverter}, ConverterParameter='HH:mm'}" FontSize="10" VerticalAlignment="Center" Margin="42,0,5,0" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <FontIcon Grid.Column="1" FontFamily="Segoe Fluent Icons" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center" Glyph="" Foreground="{Binding Platform, Converter={StaticResource PlatformToBrushConverter}}"/>
+                    <ItemsControl Grid.Column="2" ItemsSource="{Binding Badges}" VerticalAlignment="Center" Margin="0,0,4,0">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <StackPanel Orientation="Horizontal"/>
@@ -633,11 +358,7 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="models_events:BadgeInfo">
-                                <Image Source="{Binding Converter={StaticResource BadgeInfoToImageSourceConverter}}"
-                                       Height="18"
-                                       Width="18"
-                                       Margin="0,0,2,0"
-                                       VerticalAlignment="Center">
+                                <Image Source="{Binding Converter={StaticResource BadgeInfoToImageSourceConverter}}" Height="18" Width="18" Margin="0,0,2,0" VerticalAlignment="Center">
                                     <ToolTipService.ToolTip>
                                         <ToolTip Content="{Binding Identifier}"/>
                                     </ToolTipService.ToolTip>
@@ -645,13 +366,8 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <TextBlock Grid.Column="3"
-                               TextWrapping="Wrap"
-                               FontStyle="Italic"
-                               VerticalAlignment="Center"
-                               Foreground="{Binding UsernameColor, Converter={StaticResource StringToBrushConverter}, FallbackValue={ThemeResource TextFillColorPrimaryBrush}}">
-                         <Run Text="{Binding Username}"
-                              FontWeight="SemiBold"/>
+                    <TextBlock Grid.Column="3" TextWrapping="Wrap" FontStyle="Italic" VerticalAlignment="Center" Foreground="{Binding UsernameColor, Converter={StaticResource StringToBrushConverter}, FallbackValue={ThemeResource TextFillColorPrimaryBrush}}">
+                         <Run Text="{Binding Username}" FontWeight="SemiBold"/>
                          <Run Text="{Binding Converter={StaticResource SubEventVerbConverter}}"/>
                          <Run Text="{Binding Tier}"/><Run Text=" Sub"/>
                          <Run Text="{Binding Converter={StaticResource SubEventRecipientConverter}}"/>
@@ -662,159 +378,68 @@
                 </Grid>
             </Border>
         </DataTemplate>
-        <DataTemplate x:Key="FollowDataTemplate"
-                      x:DataType="models_events:FollowEvent">
-            <Border Background="#10F44336"
-                    BorderBrush="#FFF44336"
-                    BorderThickness="1,0,0,0"
-                    Margin="0,2"
-                    Padding="4,2">
-                <!-- Adjusted padding -->
+        <DataTemplate x:Key="FollowDataTemplate" x:DataType="models_events:FollowEvent">
+            <Border Background="#10F44336" BorderBrush="#FFF44336" BorderThickness="1,0,0,0" Margin="0,2" Padding="4,2">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding Timestamp, Converter={StaticResource DateTimeFormatConverter}, ConverterParameter='HH:mm'}"
-                               FontSize="10"
-                               VerticalAlignment="Center"
-                               Margin="42,0,5,0"
-                               Foreground="Gray"/>
-                    <!-- Added Left Margin 42 -->
-                    <FontIcon Grid.Column="1"
-                              Glyph=""
-                              FontFamily="Segoe Fluent Icons"
-                              FontSize="14"
-                              Margin="0,0,6,0"
-                              VerticalAlignment="Center"
-                              Foreground="{Binding Platform, Converter={StaticResource PlatformToBrushConverter}}"/>
-                    <TextBlock Grid.Column="2"
-                               VerticalAlignment="Center"><Run Text="{Binding Username}"
-                                                               FontWeight="SemiBold"/><Run Text=" just followed!"/></TextBlock>
+                    <TextBlock Grid.Column="0" Text="{Binding Timestamp, Converter={StaticResource DateTimeFormatConverter}, ConverterParameter='HH:mm'}" FontSize="10" VerticalAlignment="Center" Margin="42,0,5,0" Foreground="Gray"/>
+                    <FontIcon Grid.Column="1" Glyph="" FontFamily="Segoe Fluent Icons" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="{Binding Platform, Converter={StaticResource PlatformToBrushConverter}}"/>
+                    <TextBlock Grid.Column="2" VerticalAlignment="Center"><Run Text="{Binding Username}" FontWeight="SemiBold"/><Run Text=" just followed!"/></TextBlock>
                 </Grid>
             </Border>
         </DataTemplate>
-        <DataTemplate x:Key="RaidDataTemplate"
-                      x:DataType="models_events:RaidEvent">
-            <Border Background="#10FFC107"
-                    BorderBrush="#FFFFC107"
-                    BorderThickness="1,0,0,0"
-                    Margin="0,2"
-                    Padding="4,2">
-                <!-- Adjusted padding -->
+        <DataTemplate x:Key="RaidDataTemplate" x:DataType="models_events:RaidEvent">
+            <Border Background="#10FFC107" BorderBrush="#FFFFC107" BorderThickness="1,0,0,0" Margin="0,2" Padding="4,2">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding Timestamp, Converter={StaticResource DateTimeFormatConverter}, ConverterParameter='HH:mm'}"
-                               FontSize="10"
-                               VerticalAlignment="Center"
-                               Margin="42,0,5,0"
-                               Foreground="Gray"/>
-                    <!-- Added Left Margin 42 -->
-                    <FontIcon Grid.Column="1"
-                              Glyph=""
-                              FontFamily="Segoe Fluent Icons"
-                              FontSize="14"
-                              Margin="0,0,6,0"
-                              VerticalAlignment="Center"
-                              Foreground="{Binding Platform, Converter={StaticResource PlatformToBrushConverter}}"/>
-                    <TextBlock Grid.Column="2"
-                               VerticalAlignment="Center">
-                            <Run Text="{Binding RaiderUsername}"
-                                FontWeight="SemiBold"/>
-                            <Run Text=" is raiding with "/><Run Text="{Binding ViewerCount}"
-                                FontWeight="SemiBold"/>
+                    <TextBlock Grid.Column="0" Text="{Binding Timestamp, Converter={StaticResource DateTimeFormatConverter}, ConverterParameter='HH:mm'}" FontSize="10" VerticalAlignment="Center" Margin="42,0,5,0" Foreground="Gray"/>
+                    <FontIcon Grid.Column="1" Glyph="" FontFamily="Segoe Fluent Icons" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="{Binding Platform, Converter={StaticResource PlatformToBrushConverter}}"/>
+                    <TextBlock Grid.Column="2" VerticalAlignment="Center">
+                            <Run Text="{Binding RaiderUsername}" FontWeight="SemiBold"/>
+                            <Run Text=" is raiding with "/><Run Text="{Binding ViewerCount}" FontWeight="SemiBold"/>
                             <Run Text=" viewers!"/>
                     </TextBlock>
                 </Grid>
             </Border>
         </DataTemplate>
-        <DataTemplate x:Key="HostDataTemplate"
-                      x:DataType="models_events:HostEvent">
-            <Border Background="#1003A9F4"
-                    BorderBrush="#FF03A9F4"
-                    BorderThickness="1,0,0,0"
-                    Margin="0,2"
-                    Padding="4,2">
-                <!-- Adjusted padding -->
+        <DataTemplate x:Key="HostDataTemplate" x:DataType="models_events:HostEvent">
+            <Border Background="#1003A9F4" BorderBrush="#FF03A9F4" BorderThickness="1,0,0,0" Margin="0,2" Padding="4,2">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding Timestamp, Converter={StaticResource DateTimeFormatConverter}, ConverterParameter='HH:mm'}"
-                               FontSize="10"
-                               VerticalAlignment="Center"
-                               Margin="42,0,5,0"
-                               Foreground="Gray"/>
-                    <!-- Added Left Margin 42 -->
-                    <FontIcon Grid.Column="1"
-                              Glyph=""
-                              FontFamily="Segoe Fluent Icons"
-                              FontSize="14"
-                              Margin="0,0,6,0"
-                              VerticalAlignment="Center"
-                              Foreground="{Binding Platform, Converter={StaticResource PlatformToBrushConverter}}"/>
-                    <TextBlock Grid.Column="2"
-                               VerticalAlignment="Center"><Run Text="{Binding Converter={StaticResource HostEventTextConverter}}"/><Run Text="{Binding IsAutoHost, Converter={StaticResource AutoHostTextConverter}}"
-                                                                                                                                        FontStyle="Italic"/></TextBlock>
+                    <TextBlock Grid.Column="0" Text="{Binding Timestamp, Converter={StaticResource DateTimeFormatConverter}, ConverterParameter='HH:mm'}" FontSize="10" VerticalAlignment="Center" Margin="42,0,5,0" Foreground="Gray"/>
+                    <FontIcon Grid.Column="1" Glyph="" FontFamily="Segoe Fluent Icons" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="{Binding Platform, Converter={StaticResource PlatformToBrushConverter}}"/>
+                    <TextBlock Grid.Column="2" VerticalAlignment="Center"><Run Text="{Binding Converter={StaticResource HostEventTextConverter}}"/><Run Text="{Binding IsAutoHost, Converter={StaticResource AutoHostTextConverter}}" FontStyle="Italic"/></TextBlock>
                 </Grid>
             </Border>
         </DataTemplate>
-        <DataTemplate x:Key="SystemMessageDataTemplate"
-                      x:DataType="models_events:SystemMessageEvent">
-            <Border Background="#1A808080"
-                    BorderBrush="Gray"
-                    BorderThickness="1,0,0,0"
-                    Margin="0,2"
-                    Padding="4,2">
-                <!-- Adjusted padding -->
+        <DataTemplate x:Key="SystemMessageDataTemplate" x:DataType="models_events:SystemMessageEvent">
+            <Border Background="#1A808080" BorderBrush="Gray" BorderThickness="1,0,0,0" Margin="0,2" Padding="4,2">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding Timestamp, Converter={StaticResource DateTimeFormatConverter}, ConverterParameter='HH:mm:ss'}"
-                               FontSize="10"
-                               VerticalAlignment="Center"
-                               Margin="42,0,5,0"
-                               Foreground="Gray"/>
-                    <!-- Added Left Margin 42 -->
-                    <FontIcon Grid.Column="1"
-                              Glyph="{Binding Level, Converter={StaticResource SystemLevelToSymbolConverter}}"
-                              FontFamily="Segoe Fluent Icons"
-                              FontSize="14"
-                              Margin="0,0,6,0"
-                              VerticalAlignment="Center"
-                              Foreground="{Binding Level, Converter={StaticResource SystemLevelToBrushConverter}}"/>
-                    <TextBlock Grid.Column="2"
-                               Text="{Binding Message}"
-                               TextWrapping="Wrap"
-                               FontStyle="Italic"
-                               Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
-                               VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="0" Text="{Binding Timestamp, Converter={StaticResource DateTimeFormatConverter}, ConverterParameter='HH:mm:ss'}" FontSize="10" VerticalAlignment="Center" Margin="42,0,5,0" Foreground="Gray"/>
+                    <FontIcon Grid.Column="1" Glyph="{Binding Level, Converter={StaticResource SystemLevelToSymbolConverter}}" FontFamily="Segoe Fluent Icons" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="{Binding Level, Converter={StaticResource SystemLevelToBrushConverter}}"/>
+                    <TextBlock Grid.Column="2" Text="{Binding Message}" TextWrapping="Wrap" FontStyle="Italic" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}" VerticalAlignment="Center"/>
                 </Grid>
             </Border>
         </DataTemplate>
-        <DataTemplate x:Key="BotMessageDataTemplate"
-                      x:DataType="models_events:BotMessageEvent">
-            <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
-                    BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
-                    BorderThickness="1"
-                    CornerRadius="4"
-                    Margin="0,2"
-                    Padding="4,2">
-                <!-- Adjusted padding -->
+        <DataTemplate x:Key="BotMessageDataTemplate" x:DataType="models_events:BotMessageEvent">
+            <Border Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="4" Margin="0,2" Padding="4,2">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -823,82 +448,37 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding Timestamp, Converter={StaticResource DateTimeFormatConverter}, ConverterParameter='HH:mm'}"
-                               FontSize="10"
-                               VerticalAlignment="Center"
-                               Margin="42,0,5,0"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                    <!-- Added Left Margin 42 -->
-                    <FontIcon Grid.Column="1"
-                              Glyph=""
-                              FontFamily="Segoe Fluent Icons"
-                              FontSize="14"
-                              Margin="0,0,6,0"
-                              VerticalAlignment="Center"
-                              Foreground="{ThemeResource AccentFillColorDefaultBrush}"/>
-                    <TextBlock Grid.Column="2"
-                               Text="{Binding SenderDisplayName}"
-                               FontWeight="SemiBold"
-                               FontStyle="Italic"
-                               VerticalAlignment="Center"
-                               Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
-                    <TextBlock Grid.Column="3"
-                               Text="»"
-                               VerticalAlignment="Center"
-                               Margin="4,0,4,0"
-                               FontWeight="Bold"
-                               Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
-                    <RichTextBlock Grid.Column="4"
-                                   helpers:RichTextBlockHelper.SegmentsSource="{Binding ParsedMessage}"
-                                   TextWrapping="Wrap"
-                                   VerticalAlignment="Center"
-                                   IsTextSelectionEnabled="True"
-                                   FontSize="{ThemeResource ControlContentThemeFontSize}"/>
+                    <TextBlock Grid.Column="0" Text="{Binding Timestamp, Converter={StaticResource DateTimeFormatConverter}, ConverterParameter='HH:mm'}" FontSize="10" VerticalAlignment="Center" Margin="42,0,5,0" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <FontIcon Grid.Column="1" Glyph="" FontFamily="Segoe Fluent Icons" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="{ThemeResource AccentFillColorDefaultBrush}"/>
+                    <TextBlock Grid.Column="2" Text="{Binding SenderDisplayName}" FontWeight="SemiBold" FontStyle="Italic" VerticalAlignment="Center" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                    <TextBlock Grid.Column="3" Text="»" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                    <RichTextBlock Grid.Column="4" helpers:RichTextBlockHelper.SegmentsSource="{Binding ParsedMessage}" TextWrapping="Wrap" VerticalAlignment="Center" IsTextSelectionEnabled="True" FontSize="{ThemeResource ControlContentThemeFontSize}"/>
                 </Grid>
             </Border>
         </DataTemplate>
-        <DataTemplate x:Key="CommandInvocationDataTemplate"
-                      x:DataType="models_events:CommandInvocationEvent">
-            <Border Background="{ThemeResource SystemControlBackgroundListLowBrush}"
-                    BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
-                    BorderThickness="1"
-                    CornerRadius="4"
-                    Margin="0,2"
-                    Padding="4,6">
+        <DataTemplate x:Key="CommandInvocationDataTemplate" x:DataType="models_events:CommandInvocationEvent">
+            <Border Background="{ThemeResource SystemControlBackgroundListLowBrush}" BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="4" Margin="0,2" Padding="4,6">
                 <StackPanel Spacing="4">
-                    <!-- Original Command -->
                     <Grid Opacity="0.8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Ellipse Grid.Column="0"
-                                 Style="{StaticResource ProfilePictureEllipseStyle}"
-                                 Visibility="{Binding OriginalCommandMessage.Platform, Converter={StaticResource PlatformToVisibilityConverter}}">
+                        <Ellipse Grid.Column="0" Style="{StaticResource ProfilePictureEllipseStyle}" Visibility="{Binding OriginalCommandMessage.Platform, Converter={StaticResource PlatformToVisibilityConverter}}">
                             <Ellipse.Fill>
-                                <ImageBrush ImageSource="{Binding OriginalCommandMessage.ProfileImageUrl}"
-                                            Stretch="UniformToFill"/>
+                                <ImageBrush ImageSource="{Binding OriginalCommandMessage.ProfileImageUrl}" Stretch="UniformToFill"/>
                             </Ellipse.Fill>
                         </Ellipse>
-                        <!-- Apply conditional margin here too -->
-                        <Grid Grid.Column="1"
-                              Margin="{Binding OriginalCommandMessage.Platform, Converter={StaticResource PlatformToMarginConverter}}">
-                            <RichTextBlock helpers:RichTextBlockEventHelper.ChatEventSource="{Binding OriginalCommandMessage}"
-                                           TextWrapping="Wrap"
-                                           VerticalAlignment="Top"
-                                           IsTextSelectionEnabled="True"
-                                           FontSize="{ThemeResource ControlContentThemeFontSize}">
+                        <Grid Grid.Column="1" Margin="{Binding OriginalCommandMessage.Platform, Converter={StaticResource PlatformToMarginConverter}}">
+                            <RichTextBlock helpers:RichTextBlockEventHelper.ChatEventSource="{Binding OriginalCommandMessage}" TextWrapping="Wrap" VerticalAlignment="Top" IsTextSelectionEnabled="True" FontSize="{ThemeResource ControlContentThemeFontSize}">
                                 <RichTextBlock.Resources>
                                     <Style TargetType="Paragraph">
-                                        <Setter Property="Margin"
-                                                Value="0"/>
+                                        <Setter Property="Margin" Value="0"/>
                                     </Style>
                                 </RichTextBlock.Resources>
                             </RichTextBlock>
                         </Grid>
                     </Grid>
-                    <!-- Bot Reply -->
                     <Grid Visibility="{Binding ReplyMessage, Converter={StaticResource StringToVisibilityConverter}}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -907,44 +487,55 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Rectangle Grid.Column="0"
-                                   Width="{StaticResource DefaultLeftMarginForNoProfilePic}"/>
-                        <!-- Use a resource for the margin value -->
-                        <FontIcon Grid.Column="1"
-                                  Glyph=""
-                                  FontFamily="Segoe Fluent Icons"
-                                  FontSize="14"
-                                  Margin="0,0,6,0"
-                                  VerticalAlignment="Center"
-                                  Foreground="{ThemeResource AccentFillColorDefaultBrush}"/>
-                        <TextBlock Grid.Column="2"
-                                   Text="{Binding BotSenderDisplayName}"
-                                   FontWeight="SemiBold"
-                                   FontStyle="Italic"
-                                   VerticalAlignment="Center"
-                                   Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
-                        <TextBlock Grid.Column="3"
-                                   Text="»"
-                                   VerticalAlignment="Center"
-                                   Margin="4,0,4,0"
-                                   FontWeight="Bold"
-                                   Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
-                        <TextBlock Grid.Column="4"
-                                   Text="{Binding ReplyMessage}"
-                                   TextWrapping="Wrap"
-                                   VerticalAlignment="Center"
-                                   IsTextSelectionEnabled="True"
-                                   FontSize="{ThemeResource ControlContentThemeFontSize}"/>
+                        <Rectangle Grid.Column="0" Width="42"/>
+                        <FontIcon Grid.Column="1" Glyph="" FontFamily="Segoe Fluent Icons" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="{ThemeResource AccentFillColorDefaultBrush}"/>
+                        <TextBlock Grid.Column="2" Text="{Binding BotSenderDisplayName}" FontWeight="SemiBold" FontStyle="Italic" VerticalAlignment="Center" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                        <TextBlock Grid.Column="3" Text="»" VerticalAlignment="Center" Margin="4,0,4,0" FontWeight="Bold" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                        <TextBlock Grid.Column="4" Text="{Binding ReplyMessage}" TextWrapping="Wrap" VerticalAlignment="Center" IsTextSelectionEnabled="True" FontSize="{ThemeResource ControlContentThemeFontSize}"/>
                     </Grid>
                 </StackPanel>
             </Border>
         </DataTemplate>
         <DataTemplate x:Key="DefaultTemplate">
-            <TextBlock Opacity="0.5"
-                       FontStyle="Italic"
-                       Margin="42,2,0,2"> <!-- Added Left Margin 42 -->
+            <TextBlock Opacity="0.5" FontStyle="Italic" Margin="42,2,0,2">
                  <Run Text="{Binding Platform, Mode=OneTime}"/><Run Text=" ["/><Run Text="{Binding OriginatingAccountId, Mode=OneTime}"/><Run Text="]: "/><Run Text="{Binding}"/>
             </TextBlock>
+        </DataTemplate>
+        <DataTemplate x:Key="YouTubePollUpdateDataTemplate" x:DataType="models_events:YouTubePollUpdateEvent">
+            <Border Background="#10808080" BorderBrush="#FFB0B0B0" BorderThickness="1" CornerRadius="4" Margin="0,2" Padding="6,4">
+                <StackPanel Spacing="5">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{Binding Timestamp, Converter={StaticResource DateTimeFormatConverter}, ConverterParameter='HH:mm'}" FontSize="10" VerticalAlignment="Center" Margin="42,0,5,0" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        <FontIcon Grid.Column="1" Glyph="" FontFamily="Segoe Fluent Icons" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="{Binding Platform, Converter={StaticResource PlatformToBrushConverter}}"/>
+                        <TextBlock Grid.Column="2" Text="Poll:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="3" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="10">
+                            <Run Text="{Binding IsActive, ConverterParameter='Active;Closed', Converter={StaticResource BoolToStringConverter}}"/>
+                            <!-- TODO: Implement BoolToStringConverter -->
+                        </TextBlock>
+                    </Grid>
+                    <TextBlock Text="{Binding Question}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                    <ItemsControl ItemsSource="{Binding Options}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="segments:PollOption">
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding Text}" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding VotePercentage}" Margin="10,0,0,0" Visibility="{Binding VotePercentage, Converter={StaticResource StringToVisibilityConverter}}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="11"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
         </DataTemplate>
 
         <selectors:EventTemplateSelector x:Key="EventSelector"
@@ -956,6 +547,7 @@
                                          RaidTemplate="{StaticResource RaidDataTemplate}"
                                          HostTemplate="{StaticResource HostDataTemplate}"
                                          SystemMessageTemplate="{StaticResource SystemMessageDataTemplate}"
+                                         YouTubePollUpdateTemplate="{StaticResource YouTubePollUpdateDataTemplate}"
                                          ModerationActionTemplate="{StaticResource DefaultTemplate}"
                                          BotMessageTemplate="{StaticResource BotMessageDataTemplate}"
                                          CommandInvocationTemplate="{StaticResource CommandInvocationDataTemplate}"
@@ -1006,13 +598,30 @@
                     Grid.Column="0"
                     Margin="0,0,5,0"
                     Style="{StaticResource SubtleIconButton}"
-                    VerticalAlignment="Center"
-                    IsEnabled="False">
+                    VerticalAlignment="Center">
                 <ToolTipService.ToolTip>
-                    <ToolTip Content="Open Polls, Goals, etc. (Coming Soon)"/>
+                    <ToolTip Content="Open Polls, Goals, etc."/>
                 </ToolTipService.ToolTip>
                 <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}"
                           Glyph=""/>
+                <Button.Flyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem Text="Create YouTube Poll"
+                                        Command="{Binding ShowCreatePollDialogCommand}"
+                                        IsEnabled="{Binding CanCreateYouTubePoll}">
+                            <MenuFlyoutItem.Icon>
+                                <SymbolIcon Symbol="Accept" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem Text="End Current YouTube Poll"
+                                        Command="{Binding EndPollCommand}"
+                                        IsEnabled="{Binding CanEndYouTubePoll}">
+                            <MenuFlyoutItem.Icon>
+                                <SymbolIcon Symbol="Cancel" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                    </MenuFlyout>
+                </Button.Flyout>
             </Button>
 
             <TextBox x:Name="MessageInputBox"

@@ -2,7 +2,7 @@
     <PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
-		<TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+		<!--<TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>-->
 		<RootNamespace>StreamWeaver</RootNamespace>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<Platforms>x86;x64;ARM64</Platforms>
@@ -21,6 +21,7 @@
       <None Remove="Assets\Badges\youtube_moderator.svg" />
       <None Remove="Assets\Badges\youtube_owner.svg" />
       <None Remove="Assets\Badges\youtube_verified.svg" />
+      <None Remove="UI\Dialogs\CreatePollDialog.xaml" />
       <None Remove="UI\Views\ConnectAccountDialog.xaml" />
       <None Remove="UI\Views\LogsView.xaml" />
       <None Remove="UI\Views\MainChatView.xaml" />
@@ -100,6 +101,9 @@
 	    <Generator>MSBuild:Compile</Generator>
 	  </Page>
 	  <Page Update="UI\Views\LogsView.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </Page>
+	  <Page Update="UI\Dialogs\CreatePollDialog.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </Page>
 	  <None Update="Web\Overlay\chat.css">

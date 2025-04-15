@@ -100,7 +100,10 @@ public partial class EmoteBadgeService : IEmoteBadgeService
                         || string.IsNullOrEmpty(version.ImageUrl2x)
                         || string.IsNullOrEmpty(version.ImageUrl4x)
                     )
+                    {
                         continue;
+                    }
+
                     versions[version.Id] = new TwitchBadgeInfo(version.ImageUrl1x, version.ImageUrl2x, version.ImageUrl4x, badgeSet.SetId);
                 }
 
@@ -191,7 +194,10 @@ public partial class EmoteBadgeService : IEmoteBadgeService
                         || string.IsNullOrEmpty(version.ImageUrl2x)
                         || string.IsNullOrEmpty(version.ImageUrl4x)
                     )
+                    {
                         continue;
+                    }
+
                     versions[version.Id] = new TwitchBadgeInfo(version.ImageUrl1x, version.ImageUrl2x, version.ImageUrl4x, badgeSet.SetId);
                 }
 

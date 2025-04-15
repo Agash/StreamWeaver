@@ -60,6 +60,7 @@ internal sealed partial class YouTubeClientWrapper(string accountId, Google.Apis
                 if (ChatStoppedHandler != null)
                     YtChatReaderClient.ChatStopped -= ChatStoppedHandler;
             }
+
             YtChatReaderClient?.Dispose();
             YtChatReaderClient = null;
             ActiveVideoId = null;
@@ -78,6 +79,7 @@ internal sealed partial class YouTubeClientWrapper(string accountId, Google.Apis
         {
             _logger.LogWarning(ex, "[{AccountId}] Exception during OfficialApiService disposal.", AccountId);
         }
+
         _logger.LogDebug("[{AccountId}] YouTubeClientWrapper disposed.", AccountId);
         GC.SuppressFinalize(this);
     }
@@ -129,11 +131,13 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             _logger.LogWarning("[{AccountId}] Connect failed: Service is disposed.", logAccountId);
             return false;
         }
+
         if (string.IsNullOrWhiteSpace(accountId) || string.IsNullOrWhiteSpace(accessToken))
         {
             _logger.LogError("[{AccountId}] Connect failed: Invalid parameters (AccountId or AccessToken missing/empty).", logAccountId);
             return false;
         }
+
         if (
             _activeClients.TryGetValue(accountId, out YouTubeClientWrapper? existingWrapper)
             && (
@@ -146,6 +150,7 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             _logger.LogInformation("[{AccountId}] Connect requested but already {ConnectionStatus}.", accountId, existingWrapper.Status);
             return existingWrapper.Status is ConnectionStatus.Connected or ConnectionStatus.Limited;
         }
+
         if (existingWrapper != null)
         {
             _logger.LogInformation(
@@ -156,6 +161,7 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             if (_activeClients.TryRemove(accountId, out YouTubeClientWrapper? removed))
                 removed?.Dispose();
         }
+
         _logger.LogInformation("[{AccountId}] Creating/Validating official YouTube API service instance.", accountId);
         UpdateAccountModelStatus(accountId, ConnectionStatus.Connecting, "Initializing API...");
         try
@@ -182,6 +188,7 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
                 _messenger.Send(new ConnectionsUpdatedMessage());
                 return false;
             }
+
             _logger.LogInformation("[{AccountId}] YouTube official API Service initialized successfully.", accountId);
             UpdateAccountModelStatus(accountId, ConnectionStatus.Connected, "Ready (No Stream Active)");
             _messenger.Send(new ConnectionsUpdatedMessage());
@@ -214,6 +221,7 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
                 _messenger.Send(new ConnectionsUpdatedMessage());
                 return false;
             }
+
             _logger.LogInformation("[{AccountId}] YouTube API Service initialized in LIMITED state due to quota.", accountId);
             UpdateAccountModelStatus(accountId, ConnectionStatus.Limited, "Read-Only (API Quota Reached)");
             _messenger.Send(new ConnectionsUpdatedMessage());
@@ -230,13 +238,14 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
         }
     }
 
-    public async Task DisconnectAsync(string accountId)
+    public Task DisconnectAsync(string accountId)
     {
         if (_isDisposed)
         {
             _logger.LogDebug("[{AccountId}] Disconnect skipped: Service is disposed.", accountId);
-            return;
+            return Task.CompletedTask;
         }
+
         _logger.LogInformation("[{AccountId}] Disconnect requested.", accountId);
         if (_activeClients.TryRemove(accountId, out YouTubeClientWrapper? wrapper))
         {
@@ -248,8 +257,11 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
         {
             _logger.LogWarning("[{AccountId}] Client wrapper not found during disconnect request.", accountId);
         }
+
         UpdateAccountModelStatus(accountId, ConnectionStatus.Disconnected, "Disconnected.");
         _messenger.Send(new ConnectionsUpdatedMessage());
+
+        return Task.CompletedTask;
     }
 
     public async Task<string?> FindActiveVideoIdAsync(string accountId)
@@ -259,16 +271,19 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             _logger.LogWarning("[{AccountId}] Cannot find active video ID, client wrapper not found.", accountId);
             return null;
         }
+
         if (wrapper.OfficialApiService == null)
         {
             _logger.LogError("[{AccountId}] Cannot find active video ID, internal official API service instance is null.", accountId);
             return null;
         }
+
         if (wrapper.Status == ConnectionStatus.Limited)
         {
             _logger.LogWarning("[{AccountId}] Cannot find active stream via API: Currently in Limited (Quota) state.", accountId);
             return null;
         }
+
         _logger.LogInformation("[{AccountId}] Searching for USER'S active broadcast Video ID using official API...", accountId);
         try
         {
@@ -311,6 +326,7 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             _logger.LogWarning("[{AccountId}] Cannot get LiveChatId for Video {VideoId}, client wrapper not found.", accountId, videoId);
             return false;
         }
+
         if (wrapper.OfficialApiService == null)
         {
             _logger.LogError(
@@ -320,6 +336,7 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             );
             return false;
         }
+
         if (wrapper.Status == ConnectionStatus.Limited)
         {
             _logger.LogWarning(
@@ -329,15 +346,15 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             );
             return false;
         }
+
         _logger.LogInformation("[{AccountId}] Looking up LiveChatId for specific VideoID: {VideoId}...", accountId, videoId);
-        string? foundLiveChatId = null;
         try
         {
             VideosResource.ListRequest request = wrapper.OfficialApiService.Videos.List("liveStreamingDetails");
             request.Id = videoId;
             VideoListResponse response = await request.ExecuteAsync();
             Video? video = response.Items?.FirstOrDefault();
-            foundLiveChatId = video?.LiveStreamingDetails?.ActiveLiveChatId;
+            string? foundLiveChatId = video?.LiveStreamingDetails?.ActiveLiveChatId;
             if (!string.IsNullOrEmpty(foundLiveChatId))
             {
                 wrapper.AssociatedLiveChatId = foundLiveChatId;
@@ -380,7 +397,7 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
 
     public async Task<string?> LookupAndStoreLiveChatIdAsync(string accountId, string videoId)
     {
-        bool success = await GetAndStoreLiveChatIdForVideoAsync(accountId, videoId);
+        _ = await GetAndStoreLiveChatIdForVideoAsync(accountId, videoId);
         return _activeClients.TryGetValue(accountId, out YouTubeClientWrapper? wrapper) ? wrapper.AssociatedLiveChatId : null;
     }
 
@@ -391,16 +408,19 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             _logger.LogWarning("[{AccountId}] Cannot start monitoring, client wrapper not found.", accountId);
             return;
         }
+
         if (string.IsNullOrWhiteSpace(videoId))
         {
             _logger.LogError("[{AccountId}] Cannot start monitoring, Video ID is null or empty.", accountId);
             return;
         }
+
         if (wrapper.IsMonitoring && wrapper.ActiveVideoId == videoId)
         {
             _logger.LogInformation("[{AccountId}] Already monitoring Video ID: {VideoId}", accountId, videoId);
             return;
         }
+
         if (wrapper.IsMonitoring)
         {
             _logger.LogInformation("[{AccountId}] Stopping previous monitoring before starting new one for Video ID: {VideoId}", accountId, videoId);
@@ -412,6 +432,7 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
         {
             await GetAndStoreLiveChatIdForVideoAsync(accountId, videoId);
         }
+
         _logger.LogInformation("[{AccountId}] Starting chat monitoring for Video ID: {VideoId}", accountId, videoId);
         ConnectionStatus connectingStatus = wrapper.Status == ConnectionStatus.Limited ? ConnectionStatus.Limited : ConnectionStatus.Connecting;
         UpdateWrapperStatus(wrapper, connectingStatus, $"Monitoring chat for: {videoId}");
@@ -459,11 +480,13 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             _logger.LogWarning("[{AccountId}] Cannot stop monitoring, client wrapper not found.", accountId);
             return Task.CompletedTask;
         }
+
         if (!wrapper.IsMonitoring || wrapper.YtChatReaderClient == null)
         {
             _logger.LogDebug("[{AccountId}] Chat monitoring not active, stop request ignored.", accountId);
             return Task.CompletedTask;
         }
+
         _logger.LogInformation("[{AccountId}] Stopping chat monitoring for Video ID: {VideoId}...", accountId, wrapper.ActiveVideoId);
         bool statusChanged = false;
         try
@@ -498,12 +521,14 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
                 UpdateWrapperStatus(wrapper, finalStatus, finalStatusMsg);
                 statusChanged = true;
             }
+
             _logger.LogInformation("[{AccountId}] Chat monitoring stopped.", accountId);
             if (statusChanged)
             {
                 _messenger.Send(new ConnectionsUpdatedMessage());
             }
         }
+
         return Task.CompletedTask;
     }
 
@@ -514,11 +539,13 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             _logger.LogWarning("[{AccountId}] Cannot send empty or whitespace message.", accountId);
             return;
         }
+
         if (!_activeClients.TryGetValue(accountId, out YouTubeClientWrapper? wrapper))
         {
             _logger.LogWarning("[{AccountId}] Cannot send message, client wrapper not found.", accountId);
             return;
         }
+
         string? targetLiveChatId = liveChatId; // Use the passed-in value first
         if (string.IsNullOrWhiteSpace(targetLiveChatId))
         {
@@ -531,6 +558,7 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             {
                 targetLiveChatId = await LookupAndStoreLiveChatIdAsync(accountId, wrapper.ActiveVideoId);
             }
+
             if (string.IsNullOrWhiteSpace(targetLiveChatId))
             {
                 _logger.LogError(
@@ -545,8 +573,10 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
                 _messenger.Send(new NewEventMessage(errorLookupEvent));
                 return;
             }
+
             _logger.LogInformation("[{AccountId}] SendMessageAsync: Using looked-up LiveChatId '{LiveChatId}'.", accountId, targetLiveChatId);
         }
+
         if (wrapper.Status == ConnectionStatus.Limited)
         {
             _logger.LogWarning("[{AccountId}] Cannot send message: Client is in Limited (Read-Only) state due to API quota.", accountId);
@@ -558,6 +588,7 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             _messenger.Send(new NewEventMessage(errorEvent));
             return;
         }
+
         if (wrapper.OfficialApiService == null)
         {
             _logger.LogError("[{AccountId}] Cannot send message, official API service instance is null.", accountId);
@@ -569,6 +600,7 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             _messenger.Send(new NewEventMessage(errorEvent));
             return;
         }
+
         if (wrapper.Status != ConnectionStatus.Connected)
         {
             _logger.LogWarning(
@@ -584,6 +616,7 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             _messenger.Send(new NewEventMessage(errorEvent));
             return;
         }
+
         var liveChatMessage = new LiveChatMessage
         {
             Snippet = new LiveChatMessageSnippet
@@ -665,13 +698,14 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
     }
 
     // --- YTLiveChat Event Handlers ---
-    private async void HandleYtChatReceived(string accountId, object? sender, ChatReceivedEventArgs args)
+    private async void HandleYtChatReceived(string accountId, object? _, ChatReceivedEventArgs args)
     {
         if (!_activeClients.ContainsKey(accountId))
         {
             _logger.LogWarning("[{AccountId}] HandleYtChatReceived skipped: Wrapper not found.", accountId);
             return;
         }
+
         _logger.LogTrace(
             "[{AccountId}] Received ChatItem from YTLiveChat reader. ID: {ItemId}, Author: {AuthorName}",
             accountId,
@@ -712,13 +746,14 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
         }
     }
 
-    private void HandleYtChatError(string accountId, object? sender, ErrorOccurredEventArgs args)
+    private void HandleYtChatError(string accountId, object? _, ErrorOccurredEventArgs args)
     {
         if (!_activeClients.TryGetValue(accountId, out YouTubeClientWrapper? wrapper))
         {
             _logger.LogWarning("[{AccountId}] HandleYtChatError skipped: Wrapper not found.", accountId);
             return;
         }
+
         _logger.LogError(args.GetException(), "[{AccountId}] Error received from YTLiveChat reader.", accountId);
         UpdateWrapperStatus(wrapper, ConnectionStatus.Error, $"Chat Reader Error: {args.GetException().Message}");
         SystemMessageEvent sysErr = new()
@@ -732,13 +767,14 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
         _messenger.Send(new ConnectionsUpdatedMessage());
     }
 
-    private void HandleYtChatStopped(string accountId, object? sender, ChatStoppedEventArgs args)
+    private void HandleYtChatStopped(string accountId, object? _, ChatStoppedEventArgs args)
     {
         if (!_activeClients.TryGetValue(accountId, out YouTubeClientWrapper? wrapper))
         {
             _logger.LogWarning("[{AccountId}] HandleYtChatStopped skipped: Wrapper not found.", accountId);
             return;
         }
+
         _logger.LogWarning("[{AccountId}] YTLiveChat reader stopped unexpectedly. Reason: {Reason}", accountId, args.Reason ?? "Unknown");
         if (wrapper.Status is ConnectionStatus.Connected or ConnectionStatus.Connecting or ConnectionStatus.Limited)
         {
@@ -753,6 +789,7 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             _messenger.Send(new NewEventMessage(sysErr));
             _messenger.Send(new ConnectionsUpdatedMessage());
         }
+
         wrapper.ActiveVideoId = null;
         wrapper.AssociatedLiveChatId = null;
         wrapper.YtChatReaderClient = null;
@@ -903,6 +940,7 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
         {
             _logger.LogWarning("Could not parse SuperChat amount '{Amount}' after cleaning.", superchat.AmountString);
         }
+
         string currency = ParseCurrencyFromAmountString(superchat.AmountString);
         return new DonationEvent
         {
@@ -987,6 +1025,7 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
                 );
             }
         }
+
         return segments;
     }
 
@@ -1060,11 +1099,13 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
                 accountModel.Status = status;
                 changed = true;
             }
+
             if (accountModel.StatusMessage != message)
             {
                 accountModel.StatusMessage = message;
                 changed = true;
             }
+
             if (changed)
             {
                 _logger.LogTrace(
@@ -1103,6 +1144,7 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
                 }
             }
         }
+
         return highestPriorityColor;
     }
 
@@ -1121,6 +1163,7 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             // Convert ARGB to #AARRGGBB
             return '#' + color;
         }
+
         return null;
     }
 
@@ -1146,11 +1189,13 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             _logger.LogWarning("[{AccountId}] Cannot {Action}, client wrapper not found.", moderatorAccountId, actionName);
             return;
         }
+
         if (wrapper.OfficialApiService == null)
         {
             _logger.LogError("[{AccountId}] Cannot {Action}, official API service instance is null.", moderatorAccountId, actionName);
             return;
         }
+
         if (wrapper.Status == ConnectionStatus.Limited)
         {
             _logger.LogWarning("[{AccountId}] Cannot {Action}: Client is in Limited (Read-Only) state.", moderatorAccountId, actionName);
@@ -1207,16 +1252,19 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             _logger.LogWarning("[{AccountId}] Cannot {Action}, client wrapper not found.", moderatorAccountId, actionName);
             return;
         }
+
         if (wrapper.OfficialApiService == null)
         {
             _logger.LogError("[{AccountId}] Cannot {Action}, official API service instance is null.", moderatorAccountId, actionName);
             return;
         }
+
         if (wrapper.Status == ConnectionStatus.Limited)
         {
             _logger.LogWarning("[{AccountId}] Cannot {Action}: Client is in Limited (Read-Only) state.", moderatorAccountId, actionName);
             return;
         }
+
         _logger.LogInformation(
             "[{AccountId}] Attempting {Action} for User ID: {TargetUserId} in Chat ID: {LiveChatId} for {Duration}s",
             moderatorAccountId,
@@ -1290,16 +1338,19 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             _logger.LogWarning("[{AccountId}] Cannot {Action}, client wrapper not found.", moderatorAccountId, actionName);
             return;
         }
+
         if (wrapper.OfficialApiService == null)
         {
             _logger.LogError("[{AccountId}] Cannot {Action}, official API service instance is null.", moderatorAccountId, actionName);
             return;
         }
+
         if (wrapper.Status == ConnectionStatus.Limited)
         {
             _logger.LogWarning("[{AccountId}] Cannot {Action}: Client is in Limited (Read-Only) state.", moderatorAccountId, actionName);
             return;
         }
+
         _logger.LogInformation(
             "[{AccountId}] Attempting {Action} for User ID: {TargetUserId} in Chat ID: {LiveChatId}",
             moderatorAccountId,
@@ -1375,6 +1426,7 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             _logger.LogError("[{AccountId}] Cannot {Action}: Invalid question (empty or >100 chars).", moderatorAccountId, actionName);
             return null;
         }
+
         if (options == null || options.Count < 2 || options.Count > 5)
         {
             _logger.LogError(
@@ -1385,6 +1437,7 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             );
             return null;
         }
+
         if (options.Any(opt => string.IsNullOrWhiteSpace(opt) || opt.Length > 30))
         {
             _logger.LogError("[{AccountId}] Cannot {Action}: One or more options are empty or >30 chars.", moderatorAccountId, actionName);
@@ -1397,16 +1450,19 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             _logger.LogWarning("[{AccountId}] Cannot {Action}, client wrapper not found.", moderatorAccountId, actionName);
             return null;
         }
+
         if (wrapper.OfficialApiService == null)
         {
             _logger.LogError("[{AccountId}] Cannot {Action}, official API service instance is null.", moderatorAccountId, actionName);
             return null;
         }
+
         if (wrapper.Status == ConnectionStatus.Limited)
         {
             _logger.LogWarning("[{AccountId}] Cannot {Action}: Client is in Limited (Read-Only) state.", moderatorAccountId, actionName);
             return null;
         }
+
         if (wrapper.Status != ConnectionStatus.Connected)
         {
             _logger.LogWarning(
@@ -1497,16 +1553,19 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             _logger.LogWarning("[{AccountId}] Cannot {Action}, client wrapper not found.", moderatorAccountId, actionName);
             return false;
         }
+
         if (wrapper.OfficialApiService == null)
         {
             _logger.LogError("[{AccountId}] Cannot {Action}, official API service instance is null.", moderatorAccountId, actionName);
             return false;
         }
+
         if (wrapper.Status == ConnectionStatus.Limited)
         {
             _logger.LogWarning("[{AccountId}] Cannot {Action}: Client is in Limited (Read-Only) state.", moderatorAccountId, actionName);
             return false;
         }
+
         if (wrapper.Status != ConnectionStatus.Connected)
         {
             _logger.LogWarning(
@@ -1601,9 +1660,11 @@ public partial class YouTubeService : IYouTubeClient, IDisposable
             {
                 Task.Run(() => DisconnectAsync(id)).Wait(TimeSpan.FromSeconds(3));
             }
+
             _activeClients.Clear();
             _logger.LogInformation("YouTubeService disposed.");
         }
+
         _isDisposed = true;
     }
 }

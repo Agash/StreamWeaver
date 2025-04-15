@@ -520,7 +520,7 @@ public sealed partial class WindowsTtsService : ITtsService, IRecipient<NewEvent
                                     valueString = se_g.Username;
                                 break;
 
-                            // Add more special cases/aliases as needed (e.g., months, tier)
+                                // Add more special cases/aliases as needed (e.g., months, tier)
                         }
 
                         // If not handled by special cases, use reflection for standard properties

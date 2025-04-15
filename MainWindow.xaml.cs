@@ -37,6 +37,7 @@ public sealed partial class MainWindow : Window
         {
             _logger.LogWarning("AppTitleBar element not found in XAML. Custom drag region will not be active.");
         }
+
         NavView.Loaded += OnNavViewLoaded;
     }
 

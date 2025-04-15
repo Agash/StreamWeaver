@@ -935,12 +935,14 @@ public partial class UnifiedEventService(
                     }
 
                     if (changed)
+                    {
                         _logger.LogTrace(
                             "Dispatched status update for YouTube {ChannelName}: {Status} ('{Message}')",
                             ya.ChannelName,
                             status,
                             message
                         );
+                    }
                 }
             }
             else
@@ -1050,14 +1052,11 @@ public partial class UnifiedEventService(
     private string GetSenderDisplayName(string platform, string accountId)
     {
         string mapKey = $"{platform.ToLowerInvariant()}_{accountId}";
-        if (_accountMap.TryGetValue(mapKey, out object? accountModel))
-        {
-            return (accountModel as TwitchAccount)?.Username
+        return _accountMap.TryGetValue(mapKey, out object? accountModel)
+            ? (accountModel as TwitchAccount)?.Username
                 ?? (accountModel as YouTubeAccount)?.ChannelName
-                ?? $"Bot({accountId[..Math.Min(accountId.Length, 5)]}...)";
-        }
-
-        return "StreamWeaver";
+                ?? $"Bot({accountId[..Math.Min(accountId.Length, 5)]}...)"
+            : "StreamWeaver";
     }
 
     /// <summary>

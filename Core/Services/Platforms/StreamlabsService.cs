@@ -557,10 +557,10 @@ public partial class StreamlabsService : ObservableObject, IStreamlabsClient, ID
                 Timestamp = timestamp,
                 DonationId = donationId,
                 UserId = null,
-                Username = name,
+                Username = name ?? "Someone",
                 Amount = amount,
-                Currency = currency,
-                RawMessage = message,
+                Currency = currency ?? "USD",
+                RawMessage = message ?? string.Empty,
                 ParsedMessage = string.IsNullOrWhiteSpace(message) ? [] : [new TextSegment { Text = message }],
                 Type = DonationType.Streamlabs,
             };
@@ -596,7 +596,7 @@ public partial class StreamlabsService : ObservableObject, IStreamlabsClient, ID
                 Platform = "Streamlabs",
                 Timestamp = timestamp,
                 UserId = userId,
-                Username = name,
+                Username = name ?? "Someone",
             };
         }
         catch (Exception ex)
@@ -633,7 +633,7 @@ public partial class StreamlabsService : ObservableObject, IStreamlabsClient, ID
                 Platform = "Streamlabs",
                 Timestamp = timestamp,
                 UserId = null,
-                Username = isGift ? gifterName : name,
+                Username = (isGift ? gifterName : name) ?? "Someone",
                 IsGift = isGift,
                 RecipientUsername = isGift ? name : null,
                 Months = months,
@@ -675,10 +675,10 @@ public partial class StreamlabsService : ObservableObject, IStreamlabsClient, ID
                 Timestamp = timestamp,
                 DonationId = eventId,
                 UserId = null,
-                Username = name,
+                Username = name ?? "Someone",
                 Amount = bitsAmount,
                 Currency = "Bits",
-                RawMessage = message,
+                RawMessage = message ?? string.Empty,
                 ParsedMessage = string.IsNullOrWhiteSpace(message) ? [] : [new TextSegment { Text = message }],
                 Type = DonationType.Bits,
             };
@@ -706,7 +706,7 @@ public partial class StreamlabsService : ObservableObject, IStreamlabsClient, ID
             {
                 Platform = "Streamlabs",
                 Timestamp = timestamp,
-                RaiderUsername = name,
+                RaiderUsername = name ?? "Someone",
                 RaiderUserId = null,
                 ViewerCount = viewerCount,
             };

@@ -18,6 +18,7 @@ public partial class EventTemplateSelector : DataTemplateSelector
     public DataTemplate? WhisperTemplate { get; set; }
     public DataTemplate? BotMessageTemplate { get; set; }
     public DataTemplate? CommandInvocationTemplate { get; set; }
+    public DataTemplate? YouTubePollUpdateTemplate { get; set; }
     public DataTemplate? DefaultTemplate { get; set; }
 
     protected override DataTemplate? SelectTemplateCore(object item) => SelectTemplateCore(item, null);
@@ -33,6 +34,7 @@ public partial class EventTemplateSelector : DataTemplateSelector
             RaidEvent _ => RaidTemplate,
             HostEvent _ => HostTemplate,
             SystemMessageEvent _ => SystemMessageTemplate,
+            YouTubePollUpdateEvent _ => YouTubePollUpdateTemplate,
             ModerationActionEvent _ => ModerationActionTemplate,
             WhisperEvent _ => WhisperTemplate,
             BotMessageEvent _ => BotMessageTemplate,

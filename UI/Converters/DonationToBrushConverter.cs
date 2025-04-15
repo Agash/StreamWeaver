@@ -52,13 +52,11 @@ public class DonationToBrushConverter : IValueConverter
             return new SolidColorBrush(Colors.Magenta);
         if (amount >= 50)
             return new SolidColorBrush(Colors.Orange);
-        if (amount >= 20)
-            return new SolidColorBrush(Colors.Yellow);
-        if (amount >= 5)
-            return new SolidColorBrush(Colors.Green);
-        if (amount >= 2)
-            return new SolidColorBrush(Colors.Cyan);
-        return new SolidColorBrush(Colors.Blue);
+        return amount >= 20
+            ? new SolidColorBrush(Colors.Yellow)
+            : amount >= 5
+            ? new SolidColorBrush(Colors.Green)
+            : amount >= 2 ? new SolidColorBrush(Colors.Cyan) : new SolidColorBrush(Colors.Blue);
     }
 
     private SolidColorBrush GetFallbackBrush()

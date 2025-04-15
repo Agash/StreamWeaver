@@ -44,6 +44,7 @@ public sealed partial class SettingsView : Page
             // Logging directly here as _logger might not be initialized if GetService fails early.
             App.GetService<ILogger<SettingsView>>()
                 ?.LogCritical(ex, "FATAL: Failed to resolve SettingsViewModel or ILogger. SettingsView cannot function.");
+            throw;
             // Consider displaying an error message overlay or navigating to an error page.
         }
     }

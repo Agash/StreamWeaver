@@ -52,6 +52,7 @@ public sealed partial class AccountsSettingsPage : Page
             _logger.LogWarning("AccountToggle_Toggled fired but ViewModel is null.");
             return;
         }
+
         object? account = toggleSwitch.DataContext;
         bool connect = toggleSwitch.IsOn;
 

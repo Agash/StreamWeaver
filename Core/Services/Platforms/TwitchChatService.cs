@@ -516,30 +516,14 @@ public partial class TwitchChatService : ITwitchClient, IDisposable
     /// </summary>
     /// <param name="accountId">The Twitch User ID of the account.</param>
     /// <returns>The <see cref="ConnectionStatus"/> for the account.</returns>
-    public ConnectionStatus GetStatus(string accountId)
-    {
-        if (_activeClients.TryGetValue(accountId, out TwitchClientWrapper? wrapper))
-        {
-            return wrapper.Status;
-        }
-
-        return ConnectionStatus.Disconnected;
-    }
+    public ConnectionStatus GetStatus(string accountId) => _activeClients.TryGetValue(accountId, out TwitchClientWrapper? wrapper) ? wrapper.Status : ConnectionStatus.Disconnected;
 
     /// <summary>
     /// Gets the current status message for a specific Twitch account.
     /// </summary>
     /// <param name="accountId">The Twitch User ID of the account.</param>
     /// <returns>The status message string, or a default message if not connected/found.</returns>
-    public string? GetStatusMessage(string accountId)
-    {
-        if (_activeClients.TryGetValue(accountId, out TwitchClientWrapper? wrapper))
-        {
-            return wrapper.StatusMessage;
-        }
-
-        return "Account not connected";
-    }
+    public string? GetStatusMessage(string accountId) => _activeClients.TryGetValue(accountId, out TwitchClientWrapper? wrapper) ? wrapper.StatusMessage : "Account not connected";
 
     // --- Event Handlers (Modified to accept accountId and update specific wrapper) ---
     /// <summary>
