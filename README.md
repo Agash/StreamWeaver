@@ -20,7 +20,7 @@ StreamWeaver is your friendly, free, and open-source desktop sidekick designed t
 *   **Engage Your Audience:** Create and end YouTube Polls directly from the app! (Goals coming soon™). 📊
 *   **OBS Overlay Included:** A built-in browser source overlay to show your unified chat on stream. Customizable, naturally. 📺
 *   **Installer & Auto-Updates:** Easy installation and automatic updates via GitHub Releases (Planned). ✨
-*   **Advanced TTS Options:** Includes standard Windows TTS and plans for high-quality KokoroSharp TTS voices (Planned). 🔊
+*   **Advanced TTS Options:** Includes standard Windows TTS and plans for high-quality KokoroSharp TTS voices (Planned, including sound playback before & after). 🔊
 *   **Plugin Power!** Extend StreamWeaver's capabilities with C# plugins (more features planned!). 🔌
 *   **Built with Modern .NET:** Crafted using C# 13, .NET 9, and WinUI 3 for a native Windows experience. 💻
 *   **Free & Open Source:** Use it, peek at the code, suggest changes, make it your own! It's all MIT licensed. 💖
