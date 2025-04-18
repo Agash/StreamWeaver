@@ -2,7 +2,6 @@
 using Microsoft.UI;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media;
-using System;
 using Windows.UI; // Need this for Color struct
 
 namespace StreamWeaver.UI.Converters;
@@ -48,9 +47,8 @@ public partial class LogLevelToBrushConverter : IValueConverter
 
         bool useSubtleBackground = parameter is string strParam && strParam.Equals("Background", StringComparison.OrdinalIgnoreCase);
 
-        if (useSubtleBackground)
-        {
-            return level switch
+        return useSubtleBackground
+            ? level switch
             {
                 LogLevel.Information => s_infoBgBrush, // TODO: Decide if Info needs background
                 LogLevel.Debug => s_debugBgBrush,
@@ -59,11 +57,8 @@ public partial class LogLevelToBrushConverter : IValueConverter
                 LogLevel.Critical => s_criticalBgBrush,
                 LogLevel.Trace => s_traceBgBrush,
                 _ => s_defaultBrush // Default to transparent background
-            };
-        }
-        else // Return solid color for icon
-        {
-            return level switch
+            }
+            : (object)(level switch
             {
                 LogLevel.Information => s_infoBrush,
                 LogLevel.Debug => s_debugBrush,
@@ -73,12 +68,8 @@ public partial class LogLevelToBrushConverter : IValueConverter
                 LogLevel.Trace => s_traceBrush,
                 LogLevel.None => s_noneBrush,
                 _ => s_defaultBrush // Should not happen for icons
-            };
-        }
+            });
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, string language)
-    {
-        throw new NotImplementedException();
-    }
+    public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
 }

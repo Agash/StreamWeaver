@@ -7,5 +7,5 @@ namespace StreamWeaver.UI.Views.SettingsPages;
 /// </summary>
 public sealed partial class TtsSettingsPage : Page
 {
-    public TtsSettingsPage() => this.InitializeComponent();
+    public TtsSettingsPage() => InitializeComponent();
 }

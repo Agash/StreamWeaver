@@ -1,6 +1,5 @@
 ﻿using Microsoft.UI.Xaml; // For Visibility
 using Microsoft.UI.Xaml.Data;
-using System;
 
 namespace StreamWeaver.UI.Converters;
 
@@ -26,8 +25,5 @@ public partial class NullToVisibilityConverter : IValueConverter
         return shouldBeVisible ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, string language)
-    {
-        throw new NotImplementedException();
-    }
+    public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
 }

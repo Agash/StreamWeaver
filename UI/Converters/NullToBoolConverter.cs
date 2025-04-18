@@ -20,9 +20,7 @@ public partial class NullToBoolConverter : IValueConverter
         return invert ? isNull : !isNull;
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, string language)
-    {
+    public object ConvertBack(object value, Type targetType, object parameter, string language) =>
         // ConvertBack is not needed for one-way binding used here
         throw new NotImplementedException();
-    }
 }

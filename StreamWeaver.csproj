@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
-		<!--<TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>-->
+    <TargetFramework>net9.0-windows10.0.19041</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
 		<RootNamespace>StreamWeaver</RootNamespace>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<Platforms>x86;x64;ARM64</Platforms>
@@ -21,6 +21,7 @@
     <!-- Application Title - Used by Velopack -->
     <ApplicationTitle>StreamWeaver</ApplicationTitle>
 	</PropertyGroup>
+  
     <ItemGroup>
       <None Remove="Assets\Badges\youtube_moderator.svg" />
       <None Remove="Assets\Badges\youtube_owner.svg" />
@@ -61,11 +62,22 @@
 	</ItemGroup>
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+		<PackageReference Include="Agash.TTSTextNormalization" Version="0.2.1" />
 		<PackageReference Include="Agash.YTLiveChat" Version="2.0.1" />
 
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+
+		<PackageReference Include="CommunityToolkit.WinUI.Animations" Version="8.2.250402" />
+
+		<PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.250402" />
+
+		<PackageReference Include="CommunityToolkit.WinUI.Converters" Version="8.2.250402" />
+
+		<PackageReference Include="CommunityToolkit.WinUI.Extensions" Version="8.2.250402" />
+
+		<PackageReference Include="CommunityToolkit.WinUI.Helpers" Version="8.2.250402" />
 		<PackageReference Include="Google.Apis.Auth" Version="1.69.0" />
-		<PackageReference Include="Google.Apis.YouTube.v3" Version="1.69.0.3707" />
+		<PackageReference Include="Google.Apis.YouTube.v3" Version="1.69.0.3742" />
 		<PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.4" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.4" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="9.0.4" />
@@ -81,7 +93,7 @@
 		<PackageReference Include="System.Speech" Version="9.0.4" />
 		<PackageReference Include="TwitchLib.Api" Version="3.9.0" />
 		<PackageReference Include="TwitchLib.Client" Version="3.3.1" />
-		<PackageReference Include="Velopack" Version="0.0.1053" />
+    <PackageReference Include="Velopack" Version="0.0.1213-g57cf68d" />
 	</ItemGroup>
 	<ItemGroup>
 	  <Folder Include="UI\Templates\" />
@@ -145,23 +157,14 @@
 	  </Page>
 	</ItemGroup>
 
-	<!--
-    Defining the "HasPackageAndPublishMenuAddedByProject" property here allows the Solution
-    Explorer "Package and Publish" context menu entry to be enabled for this project even if
-    the Windows App SDK Nuget package has not yet been restored.
-  -->
-	<PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
-		<HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
-	</PropertyGroup>
-
-	<!-- Publish Properties -->
-	<PropertyGroup>
-		<PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
-		<PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
-		<PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
-		<PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<PlatformTarget>AnyCPU</PlatformTarget>
-	</PropertyGroup>
+  <!-- Publish Properties -->
+  <PropertyGroup>
+    <PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
+    <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
+    <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
+    <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
 </Project>

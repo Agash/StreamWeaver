@@ -4,7 +4,9 @@
 
 # StreamWeaver 🧵 woven chats, smooth streams! ✨
 
-[![Build Status - TBD]()](#) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE.txt)
+
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Agash/StreamWeaver/master.yml?style=flat-square&logo=github&logoColor=white)](https://github.com/Agash/StreamWeaver/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE.txt)
 
 Tired of juggling multiple chat windows? Wish you could see Twitch, YouTube, and maybe even Streamlabs events all in one place, looking *exactly* like they should? Enter **StreamWeaver!** 🎉
 

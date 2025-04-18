@@ -2,13 +2,29 @@
 
 namespace StreamWeaver.Core.Models.Settings;
 
+public enum TtsEngine
+{
+    WindowsEngine,
+    KokoroEngine,
+    PiperEngine,
+}
+
 public partial class TtsSettings : ObservableObject
 {
+    public const string WindowsEngine = "Windows";
+    public const string KokoroEngine = "Kokoro";
+
     [ObservableProperty]
     public partial bool Enabled { get; set; } = false;
 
     [ObservableProperty]
-    public partial string? SelectedVoice { get; set; }
+    public partial string SelectedEngine { get; set; } = WindowsEngine;
+
+    [ObservableProperty]
+    public partial string? SelectedWindowsVoice { get; set; }
+
+    [ObservableProperty]
+    public partial string? SelectedKokoroVoice { get; set; }
 
     [ObservableProperty]
     public partial int Volume { get; set; } = 80;

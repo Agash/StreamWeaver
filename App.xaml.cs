@@ -17,6 +17,8 @@ using StreamWeaver.Core.Services.Web;
 using StreamWeaver.Modules.Goals;
 using StreamWeaver.Modules.Subathon;
 using StreamWeaver.UI.ViewModels;
+using TTSTextNormalization.DependencyInjection;
+using TTSTextNormalization.Rules;
 using Velopack;
 using Velopack.Sources;
 using YTLiveChat.Contracts;
@@ -43,7 +45,7 @@ public partial class App : Application
     public App()
     {
         VelopackApp.Build()
-            .WithFirstRun((v) => { /* First run logic here */ })
+            .OnFirstRun((v) => { /* First run logic here */ })
             .Run();
 
         Services = ConfigureServices();
@@ -98,6 +100,31 @@ public partial class App : Application
 
         services.AddSingleton<LogViewerService>();
 
+        // --- TTS Text Normalization Configuration ---
+        services.Configure<AbbreviationRuleOptions>(options =>
+        {
+            // var customMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { { "sw", "Stream Weaver" } };
+            // options.CustomAbbreviations = customMap.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+            // options.ReplaceDefaultAbbreviations = false; // Merge with defaults
+        });
+        services.Configure<UrlRuleOptions>(options => { options.PlaceholderText = " link "; });
+        services.Configure<EmojiRuleOptions>(options => { options.Suffix = " emoji"; }); // e.g., "thumbs up emoji"
+
+
+        // Add the normalization pipeline with desired rules and order
+        services.AddTextNormalization(builder =>
+        {
+            builder.AddBasicSanitizationRule();
+            builder.AddUrlNormalizationRule();
+            builder.AddEmojiRule();
+            builder.AddCurrencyRule();
+            builder.AddAbbreviationNormalizationRule();
+            builder.AddNumberNormalizationRule();
+            builder.AddExcessivePunctuationRule();
+            builder.AddLetterRepetitionRule();
+            builder.AddWhitespaceNormalizationRule();
+        });
+
         // Core Services
         services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
         services.AddSingleton<ISettingsService, SettingsService>();
@@ -116,13 +143,26 @@ public partial class App : Application
         services.AddSingleton<IYouTubeClient, YouTubeService>();
         services.AddSingleton<IStreamlabsClient, StreamlabsService>();
 
-        // --- Add YTLiveChat Services ---
-        // Uses the IConfiguration registered above
+        // YTLiveChat Services
         configuration.GetSection("YTLiveChat").Bind(new YTLiveChatOptions { DebugLogReceivedJsonItems = true });
         services.AddYTLiveChat(configuration);
 
-        // Other Core
-        services.AddSingleton<ITtsService, WindowsTtsService>();
+        // TTS Services
+        services.AddSingleton<TtsFormattingService>(); // Register the formatting service
+
+        // Register engine-specific services directly
+        services.AddSingleton<WindowsTtsService>();
+        services.AddSingleton<KokoroTtsService>();
+
+        // Register *all* engine-specific services as IEnumerable<IEngineSpecificTtsService>
+        // The CompositeTtsService will inject this IEnumerable.
+        services.AddSingleton<IEngineSpecificTtsService, WindowsTtsService>(sp => sp.GetRequiredService<WindowsTtsService>());
+        services.AddSingleton<IEngineSpecificTtsService, KokoroTtsService>(sp => sp.GetRequiredService<KokoroTtsService>());
+
+        // Register CompositeTtsService as the main ITtsService implementation
+        services.AddSingleton<ITtsService, CompositeTtsService>();
+
+        // Other Core (Keep as is)
         services.AddSingleton<UnifiedEventService>();
 
         // Web Server
@@ -323,6 +363,7 @@ public partial class App : Application
                     s_updateDownloadInitiated = false;
                     s_pendingUpdateInfo = null;
                 }
+
                 return;
             }
 
@@ -386,6 +427,7 @@ public partial class App : Application
                 s_pendingUpdateInfo = null;
                 // Don't set s_updateAppliedOrDeferred as no decision was made
             }
+
             return;
         }
 
@@ -438,6 +480,7 @@ public partial class App : Application
                         // No need to reset s_updateDownloadInitiated, download is still done
                         ShowErrorDialog("Update Installation Failed", $"Could not install the update. Error: {ex.Message}");
                     }
+
                     break;
 
                 case ContentDialogResult.Secondary: // Install on Exit
@@ -454,6 +497,7 @@ public partial class App : Application
                         s_updateAppliedOrDeferred = false; // Reset decision state on failure
                         ShowErrorDialog("Update Scheduling Failed", $"Could not schedule the update. Error: {ex.Message}");
                     }
+
                     break;
 
                 case ContentDialogResult.None: // Dialog dismissed without button press (e.g., Esc)
@@ -475,6 +519,7 @@ public partial class App : Application
             s_logger?.LogError("Cannot show error dialog '{Title}': MainWindow/XamlRoot is null.", title);
             return;
         }
+
         ContentDialog errorDialog = new()
         {
             Title = title,

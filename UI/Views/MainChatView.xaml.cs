@@ -1,6 +1,7 @@
 using System.Collections.Specialized;
+using CommunityToolkit.WinUI;
 using Microsoft.Extensions.Logging;
-using Microsoft.UI.Dispatching;
+using Microsoft.UI.Dispatching; // Keep this for DispatcherQueue itself
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -51,11 +52,12 @@ public sealed partial class MainChatView : Page
 
         FindAndHookScrollViewer();
         _logger.LogDebug("Scheduling initial ScrollToBottom after a short delay.");
-        bool initialScrollEnqueued = DispatcherQueue.TryEnqueue(async () =>
+
+        _ = DispatcherQueue.EnqueueAsync(async () =>
         {
             _logger.LogTrace("Executing delayed initial ScrollToBottom...");
-            await Task.Delay(250);
-            if (IsLoaded)
+            await Task.Delay(250); // Keep delay for visual settling
+            if (IsLoaded) // Check if page is still loaded
             {
                 await ScrollToBottom();
                 _logger.LogDebug("Initial scroll attempt finished.");
@@ -65,10 +67,6 @@ public sealed partial class MainChatView : Page
                 _logger.LogDebug("Initial scroll cancelled as page was unloaded.");
             }
         });
-        if (!initialScrollEnqueued)
-        {
-            _logger.LogWarning("Failed to enqueue initial ScrollToBottom operation.");
-        }
     }
 
     private void FindAndHookScrollViewer()
@@ -84,13 +82,12 @@ public sealed partial class MainChatView : Page
             }
             else
             {
-                _logger.LogWarning(
-                    "Could not find the internal ScrollViewer for ChatListView on initial load. Auto-scroll may be delayed or disabled."
-                );
+                _logger.LogWarning("Could not find the internal ScrollViewer for ChatListView on initial load. Auto-scroll may be delayed or disabled.");
             }
         }
         else
         {
+            // Re-hook just in case something unloaded/reloaded it internally
             _chatScrollViewer.ViewChanged -= ScrollViewer_ViewChanged;
             _chatScrollViewer.ViewChanged += ScrollViewer_ViewChanged;
             _logger.LogDebug("ScrollViewer already cached, ensured ViewChanged event is hooked.");
@@ -119,15 +116,13 @@ public sealed partial class MainChatView : Page
         if (e.Action == NotifyCollectionChangedAction.Add && _shouldScrollToBottom)
         {
             _logger.LogTrace("New items added and auto-scroll enabled. Enqueueing ScrollToBottom task.");
-            bool enqueued = DispatcherQueue.TryEnqueue(async () => await ScrollToBottom());
-            if (!enqueued)
-                _logger.LogWarning("Failed to enqueue ScrollToBottom operation.");
+            _ = DispatcherQueue.EnqueueAsync(ScrollToBottom);
         }
         else if (e.Action == NotifyCollectionChangedAction.Reset)
         {
             _logger.LogDebug("Event collection reset. Re-enabling auto-scroll.");
             _shouldScrollToBottom = true;
-            DispatcherQueue.TryEnqueue(async () => await ScrollToBottom());
+            _ = DispatcherQueue.EnqueueAsync(ScrollToBottom);
         }
     }
 
@@ -137,6 +132,7 @@ public sealed partial class MainChatView : Page
         {
             const double bottomTolerance = 10.0;
             bool isNearBottom = _chatScrollViewer.VerticalOffset >= _chatScrollViewer.ScrollableHeight - bottomTolerance;
+
             if (isNearBottom)
             {
                 if (!_shouldScrollToBottom)
@@ -145,15 +141,12 @@ public sealed partial class MainChatView : Page
                     _shouldScrollToBottom = true;
                 }
             }
-            else
+            else // User scrolled up significantly
             {
                 if (_shouldScrollToBottom)
                 {
-                    _logger.LogDebug(
-                        "User scrolled up ({VerticalOffset}/{ScrollableHeight}). Disabling auto-scroll.",
-                        _chatScrollViewer.VerticalOffset,
-                        _chatScrollViewer.ScrollableHeight
-                    );
+                    _logger.LogDebug("User scrolled up ({VerticalOffset}/{ScrollableHeight}). Disabling auto-scroll.",
+                        _chatScrollViewer.VerticalOffset, _chatScrollViewer.ScrollableHeight);
                     _shouldScrollToBottom = false;
                 }
             }
@@ -173,8 +166,9 @@ public sealed partial class MainChatView : Page
             }
         }
 
-        await Task.Yield();
-        await Task.Delay(75);
+        await Task.Yield(); // Allow layout to potentially update
+        // Short delay might still be helpful sometimes after Yield
+        await Task.Delay(50);
 
         if (ChatListView.Items.Count > 0)
         {
@@ -183,6 +177,7 @@ public sealed partial class MainChatView : Page
                 object lastItem = ChatListView.Items[^1];
                 _logger.LogTrace("Scrolling last item into view using default ScrollIntoView (after delay).");
                 ChatListView.ScrollIntoView(lastItem, ScrollIntoViewAlignment.Leading);
+                // Re-assert that we want auto-scroll after programmatically scrolling
                 _shouldScrollToBottom = true;
             }
             catch (ArgumentOutOfRangeException ex)
@@ -204,6 +199,7 @@ public sealed partial class MainChatView : Page
     {
         if (element is ScrollViewer viewer)
             return viewer;
+
         int childrenCount = VisualTreeHelper.GetChildrenCount(element);
         for (int i = 0; i < childrenCount; i++)
         {
@@ -236,5 +232,7 @@ public sealed partial class MainChatView : Page
         {
             _logger.LogTrace("ListView item container entering recycle queue. Phase: {Phase}", args.Phase);
         }
+
+        args.Handled = true; // Mark handled to potentially improve performance
     }
 }

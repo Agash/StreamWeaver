@@ -3,6 +3,7 @@ using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.WinUI;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -60,10 +61,21 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
     private bool _isDisposed = false;
 
     /// <summary>
-    /// Collection of available TTS voices installed on the system.
+    /// Collection of available Windows TTS voices installed on the system.
     /// </summary>
     [ObservableProperty]
-    public partial ObservableCollection<string> Voices { get; set; } = [];
+    public partial ObservableCollection<string> WindowsVoices { get; set; } = [];
+
+    /// <summary>
+    /// Collection of available KokoroSharp voices.
+    /// </summary>
+    [ObservableProperty]
+    public partial ObservableCollection<string> KokoroVoices { get; set; } = [];
+
+    /// <summary>
+    /// Collection of available TTS Engine options for the UI.
+    /// </summary>
+    public ObservableCollection<string> TtsEngineOptions { get; } = [TtsSettings.WindowsEngine, TtsSettings.KokoroEngine];
 
     /// <summary>
     /// The calculated URL for the chat browser source overlay.
@@ -138,6 +150,60 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
     /// <summary>Gets a value indicating whether the Streamlabs connection can currently be disabled.</summary>
     public bool CanDisableStreamlabs => Connections.EnableStreamlabs || StreamlabsStatus != ConnectionStatus.Disconnected;
 
+    // Forwarding properties for TTS settings
+    public string SelectedEngine
+    {
+        get => TtsSettings.SelectedEngine;
+        set
+        {
+            if (TtsSettings.SelectedEngine != value)
+            {
+                TtsSettings.SelectedEngine = value;
+                OnPropertyChanged(); // Notify UI of change
+                OnPropertyChanged(nameof(TtsSettings)); // Notify dependent elements
+                SelectedEngineChanged(); // Call handler
+            }
+        }
+    }
+
+    public string? SelectedWindowsVoice
+    {
+        get => TtsSettings.SelectedWindowsVoice;
+        set
+        {
+            if (TtsSettings.SelectedWindowsVoice != value)
+            {
+                TtsSettings.SelectedWindowsVoice = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(TtsSettings));
+                // Apply voice change immediately if Windows engine is active
+                if (SelectedEngine == TtsSettings.WindowsEngine && value != null)
+                {
+                    _ttsService.SetWindowsVoice(value);
+                }
+            }
+        }
+    }
+
+    public string? SelectedKokoroVoice
+    {
+        get => TtsSettings.SelectedKokoroVoice;
+        set
+        {
+            if (TtsSettings.SelectedKokoroVoice != value)
+            {
+                TtsSettings.SelectedKokoroVoice = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(TtsSettings));
+                // Apply voice change immediately if Kokoro engine is active
+                if (SelectedEngine == TtsSettings.KokoroEngine && value != null)
+                {
+                    _ttsService.SetKokoroVoice(value);
+                }
+            }
+        }
+    }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="SettingsViewModel"/> class.
     /// Sets up navigation, loads initial state, and subscribes to necessary events.
@@ -152,7 +218,8 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
         ITokenStorageService tokenStorageService,
         ITwitchClient twitchClient,
         IYouTubeClient youTubeClient,
-        PluginService pluginService
+        PluginService pluginService,
+        DispatcherQueue dispatcherQueue
     )
     {
         _logger = logger;
@@ -165,9 +232,7 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
         _twitchClient = twitchClient;
         _youTubeClient = youTubeClient;
         _pluginService = pluginService;
-
-        _dispatcherQueue =
-            DispatcherQueue.GetForCurrentThread() ?? throw new InvalidOperationException("SettingsViewModel must be created on the UI thread.");
+        _dispatcherQueue = dispatcherQueue;
 
         _logger.LogInformation("Initializing SettingsViewModel.");
 
@@ -225,7 +290,7 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
         SelectedSection = SettingsSections.FirstOrDefault();
 
         NotifyAllPropertiesChanged();
-        LoadVoices();
+        LoadInitialTtsVoices();
         UpdateStreamlabsStatus();
         HookPropertyListeners();
         UpdateOverlayUrl();
@@ -239,10 +304,10 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
     /// Handler for the SettingsService.SettingsUpdated event. Refreshes ViewModel state.
     /// Ensures UI updates happen on the correct thread.
     /// </summary>
-    private void SettingsService_SettingsUpdated(object? sender, EventArgs e)
+    private async void SettingsService_SettingsUpdated(object? sender, EventArgs e)
     {
         _logger.LogInformation("SettingsService_SettingsUpdated event received. Refreshing ViewModel state.");
-        _dispatcherQueue.TryEnqueue(() =>
+        await _dispatcherQueue.EnqueueAsync(() =>
         {
             if (_isDisposed)
                 return;
@@ -255,11 +320,11 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
     /// Receives the ConnectionsUpdatedMessage to trigger a refresh of account statuses.
     /// </summary>
     /// <param name="message">The received message.</param>
-    public void Receive(ConnectionsUpdatedMessage message)
+    public async void Receive(ConnectionsUpdatedMessage message)
     {
         _logger.LogInformation("ConnectionsUpdatedMessage received. Refreshing account statuses.");
 
-        _dispatcherQueue.TryEnqueue(() =>
+        await _dispatcherQueue.EnqueueAsync(() =>
         {
             if (!_isDisposed)
                 RefreshAccountStatuses();
@@ -338,6 +403,9 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
         OnPropertyChanged(nameof(Credentials));
         OnPropertyChanged(nameof(Connections));
         OnPropertyChanged(nameof(TtsSettings));
+        OnPropertyChanged(nameof(SelectedEngine));
+        OnPropertyChanged(nameof(SelectedWindowsVoice));
+        OnPropertyChanged(nameof(SelectedKokoroVoice));
         OnPropertyChanged(nameof(OverlaySettings));
         OnPropertyChanged(nameof(ModuleSettings));
         OnPropertyChanged(nameof(TwitchAccounts));
@@ -453,7 +521,39 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
                 break;
             case TtsSettings ttsSettings:
                 if (e.PropertyName == nameof(TtsSettings.Enabled))
+                {
                     TestTtsCommand.NotifyCanExecuteChanged();
+                    // Trigger voice loading if TTS was just enabled and voices aren't loaded yet
+                    if (ttsSettings.Enabled && WindowsVoices.Count == 0 && KokoroVoices.Count == 0)
+                    {
+                        LoadInitialTtsVoices();
+                    }
+                }
+                // Update SelectedEngine/Voice bindings in ViewModel when model changes (if needed)
+                else if (e.PropertyName == nameof(TtsSettings.SelectedEngine))
+                {
+                    OnPropertyChanged(nameof(SelectedEngine)); // Update VM property bound to UI
+                    SelectedEngineChanged(); // Trigger voice loading etc.
+                }
+                else if (e.PropertyName == nameof(TtsSettings.SelectedWindowsVoice))
+                {
+                    OnPropertyChanged(nameof(SelectedWindowsVoice)); // Update VM property bound to UI
+                    if (SelectedEngine == TtsSettings.WindowsEngine) ApplyVoiceSetting();
+                }
+                else if (e.PropertyName == nameof(TtsSettings.SelectedKokoroVoice))
+                {
+                    OnPropertyChanged(nameof(SelectedKokoroVoice)); // Update VM property bound to UI
+                    if (SelectedEngine == TtsSettings.KokoroEngine) ApplyVoiceSetting();
+                }
+                // Apply Rate/Volume changes immediately
+                else if (e.PropertyName == nameof(TtsSettings.Rate))
+                {
+                    _ttsService.SetRate(ttsSettings.Rate);
+                }
+                else if (e.PropertyName == nameof(TtsSettings.Volume))
+                {
+                    _ttsService.SetVolume(ttsSettings.Volume);
+                }
 
                 break;
             case ModuleSettings moduleSettings:
@@ -473,14 +573,14 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
     /// Handles PropertyChanged events from the Streamlabs client service.
     /// Updates the local status properties on the UI thread.
     /// </summary>
-    private void StreamlabsClient_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    private async void StreamlabsClient_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (_isDisposed)
             return;
         if (e.PropertyName is nameof(IStreamlabsClient.Status) or nameof(IStreamlabsClient.StatusMessage))
         {
             _logger.LogTrace("StreamlabsClient_PropertyChanged: {PropertyName}. Queueing status update.", e.PropertyName);
-            _dispatcherQueue.TryEnqueue(() =>
+            await _dispatcherQueue.EnqueueAsync(() =>
             {
                 if (!_isDisposed)
                     UpdateStreamlabsStatus();
@@ -516,69 +616,190 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
         SetupStreamlabsTokenCommand.NotifyCanExecuteChanged();
     }
 
-    /// <summary>
-    /// Loads available TTS voices from the TTS service.
-    /// Ensures execution on the UI thread as it modifies an ObservableCollection.
-    /// </summary>
-    private async void LoadVoices()
+    private void LoadInitialTtsVoices()
     {
-        if (_isDisposed)
-            return;
-        _logger.LogInformation("Loading TTS voices...");
+        // Load voices based on the engine selected in the settings
+        if (SelectedEngine == TtsSettings.KokoroEngine)
+        {
+            LoadKokoroVoicesAsync();
+        }
+        else // Default to Windows
+        {
+            LoadWindowsVoicesAsync();
+        }
+    }
+
+    private async void SelectedEngineChanged()
+    {
+        _logger.LogInformation("Selected TTS Engine changed to: {Engine}", SelectedEngine);
+        // Apply engine change if needed by the service (might be implicit)
+        // _ttsService.SetEngine(SelectedEngine); // Example if service needs explicit switching
+
+        // Load the appropriate voices for the newly selected engine
+        if (SelectedEngine == TtsSettings.KokoroEngine)
+        {
+            await LoadKokoroVoicesAsync();
+        }
+        else // Default to Windows
+        {
+            await LoadWindowsVoicesAsync();
+        }
+        // Ensure the correct voice is applied from settings
+        ApplyVoiceSetting();
+    }
+
+
+    private void ApplyVoiceSetting()
+    {
+        if (_isDisposed) return;
         try
         {
-            IEnumerable<string> installedVoices = await _ttsService.GetInstalledVoicesAsync();
-
-            if (!_dispatcherQueue.HasThreadAccess)
+            if (SelectedEngine == TtsSettings.KokoroEngine && !string.IsNullOrEmpty(SelectedKokoroVoice))
             {
-                _logger.LogWarning("LoadVoices invoked on non-UI thread, dispatching needed.");
-                _dispatcherQueue.TryEnqueue(() => LoadVoicesInternal(installedVoices));
+                _ttsService.SetKokoroVoice(SelectedKokoroVoice);
+            }
+            else if (SelectedEngine == TtsSettings.WindowsEngine && !string.IsNullOrEmpty(SelectedWindowsVoice))
+            {
+                _ttsService.SetWindowsVoice(SelectedWindowsVoice);
             }
             else
             {
-                LoadVoicesInternal(installedVoices);
+                _logger.LogDebug("No specific voice selected for engine {Engine} or voice is null.", SelectedEngine);
+                // Optionally reset to default? Depends on ITtsService implementation.
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error loading TTS voices.");
-            _dispatcherQueue.TryEnqueue(() =>
+            _logger.LogError(ex, "Error applying selected voice setting for engine {Engine}.", SelectedEngine);
+        }
+    }
+
+    /// <summary>
+    /// Loads available Windows TTS voices from the TTS service.
+    /// Renamed from LoadVoices.
+    /// </summary>
+    private async Task LoadWindowsVoicesAsync()
+    {
+        if (_isDisposed) return;
+        _logger.LogInformation("Loading Windows TTS voices...");
+        try
+        {
+            IEnumerable<string> installedVoices = await _ttsService.GetInstalledWindowsVoicesAsync();
+            await _dispatcherQueue.EnqueueAsync(() =>
             {
-                if (!_isDisposed)
-                    Voices.Clear();
-                if (TtsSettings != null)
-                    TtsSettings.SelectedVoice = null;
+                if (_isDisposed) return;
+                WindowsVoices.Clear();
+                string? currentSelected = SelectedWindowsVoice; // Use Windows voice setting
+                if (installedVoices.Any())
+                {
+                    foreach (string voice in installedVoices) WindowsVoices.Add(voice);
+                    bool selectionStillValid = WindowsVoices.Contains(currentSelected ?? "");
+                    _logger.LogDebug("Loaded {Count} Windows TTS voices.", WindowsVoices.Count);
+                    if (!selectionStillValid && WindowsVoices.Any())
+                    {
+                        SelectedWindowsVoice = WindowsVoices.FirstOrDefault(); // Update Windows setting
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("No installed Windows TTS voices found.");
+                    SelectedWindowsVoice = null; // Update Windows setting
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading Windows TTS voices.");
+            await _dispatcherQueue.EnqueueAsync(() =>
+            {
+                if (_isDisposed) return;
+                WindowsVoices.Clear();
+                SelectedWindowsVoice = null;
             });
         }
     }
 
     /// <summary>
-    /// Internal helper to populate the Voices collection (must be called on UI thread).
+    /// Loads available Kokoro TTS voices from the TTS service.
+    /// Placeholder implementation.
     /// </summary>
-    private void LoadVoicesInternal(IEnumerable<string> installedVoices)
+    private async Task LoadKokoroVoicesAsync()
     {
-        if (_isDisposed)
-            return;
-        Voices.Clear();
-        string? currentSelected = TtsSettings?.SelectedVoice;
-        if (installedVoices.Any())
+        if (_isDisposed) return;
+        _logger.LogInformation("Loading Kokoro TTS voices (stub)...");
+        try
         {
-            foreach (string voice in installedVoices)
-                Voices.Add(voice);
-            bool selectionStillValid = Voices.Contains(currentSelected ?? "");
-            _logger.LogInformation("Loaded {Count} TTS voices.", Voices.Count);
-            if (!selectionStillValid && Voices.Any() && TtsSettings != null)
+            // *** Replace with actual call when ITtsService implements GetInstalledKokoroVoicesAsync ***
+            // IEnumerable<string> installedVoices = await _ttsService.GetInstalledKokoroVoicesAsync();
+            await Task.Delay(10); // Simulate async work
+            IEnumerable<string> installedVoices = []; // Placeholder
+
+            await _dispatcherQueue.EnqueueAsync(() =>
             {
-                TtsSettings.SelectedVoice = Voices.FirstOrDefault();
-            }
+                if (_isDisposed) return;
+                KokoroVoices.Clear();
+                string? currentSelected = SelectedKokoroVoice; // Use Kokoro voice setting
+                if (installedVoices.Any())
+                {
+                    foreach (string voice in installedVoices) KokoroVoices.Add(voice);
+                    bool selectionStillValid = KokoroVoices.Contains(currentSelected ?? "");
+                    _logger.LogDebug("Loaded {Count} Kokoro TTS voices.", KokoroVoices.Count);
+                    if (!selectionStillValid && KokoroVoices.Any())
+                    {
+                        SelectedKokoroVoice = KokoroVoices.FirstOrDefault(); // Update Kokoro setting
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("No installed Kokoro TTS voices found (or loading not implemented).");
+                    SelectedKokoroVoice = null; // Update Kokoro setting
+                }
+            });
         }
-        else
+        catch (Exception ex)
         {
-            _logger.LogWarning("No installed TTS voices found.");
-            if (TtsSettings != null)
-                TtsSettings.SelectedVoice = null;
+            _logger.LogError(ex, "Error loading Kokoro TTS voices.");
+            await _dispatcherQueue.EnqueueAsync(() =>
+            {
+                if (_isDisposed) return;
+                KokoroVoices.Clear();
+                SelectedKokoroVoice = null;
+            });
         }
     }
+
+
+    /// <summary>
+    /// Command to test the Text-to-Speech configuration using the currently selected engine and voice.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanTestTts))]
+    private async Task TestTtsAsync()
+    {
+        if (!TtsSettings.Enabled)
+        {
+            _logger.LogInformation("Test TTS requested but TTS is currently disabled.");
+            return;
+        }
+
+        string voiceToUse = (SelectedEngine == TtsSettings.KokoroEngine ? SelectedKokoroVoice : SelectedWindowsVoice) ?? "Default";
+
+        _logger.LogInformation(
+            "Testing TTS with Engine: {Engine}, Voice: '{SelectedVoice}', Rate: {Rate}, Volume: {Volume}",
+            SelectedEngine,
+            voiceToUse,
+            TtsSettings.Rate,
+            TtsSettings.Volume
+        );
+
+        // Settings are applied via property setters now or via ApplyVoiceSetting
+        _ttsService.SetRate(TtsSettings.Rate);
+        _ttsService.SetVolume(TtsSettings.Volume);
+        ApplyVoiceSetting(); // Ensure correct voice is selected in the service
+
+        await _ttsService.SpeakAsync($"This is a test using the {SelectedEngine} engine.");
+    }
+
+    private bool CanTestTts() => TtsSettings.Enabled;
 
     /// <summary>
     /// Updates the ChatOverlayUrl property based on the current WebServerPort setting.
@@ -627,34 +848,6 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
         {
             logger?.LogError(ex, "Error opening URL {Url}", url);
         }
-    }
-
-    /// <summary>
-    /// Command to test the Text-to-Speech configuration.
-    /// </summary>
-    [RelayCommand]
-    private async Task TestTtsAsync()
-    {
-        if (!TtsSettings.Enabled)
-        {
-            _logger.LogInformation("Test TTS requested but TTS is currently disabled.");
-
-            return;
-        }
-
-        _logger.LogInformation(
-            "Testing TTS with Voice: '{SelectedVoice}', Rate: {Rate}, Volume: {Volume}",
-            TtsSettings.SelectedVoice ?? "Default",
-            TtsSettings.Rate,
-            TtsSettings.Volume
-        );
-
-        _ttsService.SetRate(TtsSettings.Rate);
-        _ttsService.SetVolume(TtsSettings.Volume);
-        if (!string.IsNullOrEmpty(TtsSettings.SelectedVoice))
-            _ttsService.SetVoice(TtsSettings.SelectedVoice);
-
-        await _ttsService.SpeakAsync("This is a test of the text to speech system.");
     }
 
     /// <summary>
@@ -729,7 +922,7 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
         {
             await _unifiedEventService.LogoutTwitchAccountAsync(userId);
 
-            _dispatcherQueue.TryEnqueue(() =>
+            await _dispatcherQueue.EnqueueAsync(() =>
             {
                 if (CurrentSettings.Connections.TwitchAccounts.Remove(accountToLogout))
                 {
@@ -760,7 +953,7 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
             await _unifiedEventService.LogoutTwitchAccountAsync(userId);
 
             bool removed = false;
-            _dispatcherQueue.TryEnqueue(() =>
+            await _dispatcherQueue.EnqueueAsync(() =>
             {
                 removed = CurrentSettings.Connections.TwitchAccounts.Remove(accountToRemove);
                 if (removed)
@@ -825,7 +1018,7 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
         try
         {
             await _unifiedEventService.LogoutYouTubeAccountAsync(channelId);
-            _dispatcherQueue.TryEnqueue(() =>
+            await _dispatcherQueue.EnqueueAsync(() =>
             {
                 if (CurrentSettings.Connections.YouTubeAccounts.Remove(accountToLogout))
                 {
@@ -856,7 +1049,7 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
             await _unifiedEventService.LogoutYouTubeAccountAsync(channelId);
 
             bool removed = false;
-            _dispatcherQueue.TryEnqueue(() =>
+            await _dispatcherQueue.EnqueueAsync(() =>
             {
                 removed = CurrentSettings.Connections.YouTubeAccounts.Remove(accountToRemove);
                 if (removed)

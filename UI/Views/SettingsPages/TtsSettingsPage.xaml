@@ -8,6 +8,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:viewmodels="using:StreamWeaver.UI.ViewModels"
     xmlns:converters="using:StreamWeaver.UI.Converters"
+    xmlns:settings="using:StreamWeaver.Core.Models.Settings"
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance Type=viewmodels:SettingsViewModel, IsDesignTimeCreatable=False}"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
@@ -19,6 +20,8 @@
                         ResourceKey="DecimalFormatter"/>
         <StaticResource x:Key="IntegerFormatter"
                         ResourceKey="IntegerFormatter"/>
+        <converters:EqualityToVisibilityConverter x:Key="EngineToVisibilityConverter"/>
+
     </Page.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto"
@@ -32,15 +35,41 @@
                     <ToolTip Content="Globally enable or disable the text-to-speech feature."/>
                 </ToolTipService.ToolTip>
             </ToggleSwitch>
-            <ComboBox Header="Voice"
-                      ItemsSource="{Binding Voices}"
-                      SelectedItem="{Binding TtsSettings.SelectedVoice, Mode=TwoWay}"
+
+            <TextBlock Text="TTS Engine" Style="{StaticResource BaseTextBlockStyle}" Margin="0,10,0,-5"/>
+            <RadioButtons Header="Select the engine to use for speech synthesis:"
+                          ItemsSource="{Binding TtsEngineOptions}"
+                          SelectedItem="{Binding SelectedEngine, Mode=TwoWay}"
+                          IsEnabled="{Binding TtsSettings.Enabled}">
+                <RadioButtons.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}"/>
+                    </DataTemplate>
+                </RadioButtons.ItemTemplate>
+            </RadioButtons>
+
+            <ComboBox Header="Windows Voice"
+                      ItemsSource="{Binding WindowsVoices}"
+                      SelectedItem="{Binding SelectedWindowsVoice, Mode=TwoWay}"
                       IsEnabled="{Binding TtsSettings.Enabled}"
-                      PlaceholderText="Default System Voice">
+                      PlaceholderText="Default System Voice"
+                      Visibility="{Binding SelectedEngine, Converter={StaticResource EngineToVisibilityConverter}, ConverterParameter='Windows'}">
                 <ToolTipService.ToolTip>
                     <ToolTip Content="Select the voice used for TTS playback. Uses installed Windows voices."/>
                 </ToolTipService.ToolTip>
             </ComboBox>
+
+            <ComboBox Header="Kokoro Voice"
+                      ItemsSource="{Binding KokoroVoices}"
+                      SelectedItem="{Binding SelectedKokoroVoice, Mode=TwoWay}"
+                      IsEnabled="{Binding TtsSettings.Enabled}"
+                      PlaceholderText="No Kokoro voices found"
+                      Visibility="{Binding SelectedEngine, Converter={StaticResource EngineToVisibilityConverter}, ConverterParameter='Kokoro'}">
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="Select the voice used for Kokoro TTS playback."/>
+                </ToolTipService.ToolTip>
+            </ComboBox>
+
             <Slider Header="Volume"
                     Minimum="0"
                     Maximum="100"
@@ -163,6 +192,19 @@
                             <ToolTip Content="Read out incoming raid notifications."/>
                         </ToolTipService.ToolTip>
                     </CheckBox>
+                    <NumberBox Header="Minimum Raid Viewers to Read"
+                               Minimum="0"
+                               Value="{Binding TtsSettings.MinimumRaidViewersToRead, Mode=TwoWay}"
+                               IsEnabled="{Binding TtsSettings.ReadRaids}"
+                               NumberFormatter="{StaticResource IntegerFormatter}"
+                               SpinButtonPlacementMode="Inline"
+                               SmallChange="1"
+                               LargeChange="10"
+                               Margin="20,0,0,0">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Only read raids that meet or exceed this viewer count."/>
+                        </ToolTipService.ToolTip>
+                    </NumberBox>
                 </StackPanel>
             </Expander>
 
