@@ -42,12 +42,8 @@
         <converters:PlatformToVisibilityConverter x:Key="PlatformToVisibilityConverter"/>
         <converters:PlatformToMarginConverter x:Key="PlatformToMarginConverter"/>
         <converters:PlatformToIsEnabledConverter x:Key="PlatformToIsEnabledConverter"/>
-        <!-- ## START ADDITION ## -->
         <converters:MembershipDetailsConverter x:Key="MembershipDetailsConverter"/>
-        <!-- ## END ADDITION ## -->
 
-
-        <!-- Styles omitted for brevity... -->
         <Style x:Key="ProfilePictureStyle" TargetType="Image">
             <Setter Property="Width" Value="36"/>
             <Setter Property="Height" Value="36"/>
@@ -166,54 +162,55 @@
         <!-- DataTemplates -->
         <DataTemplate x:Key="ChatMessageDataTemplate" x:DataType="models_events:ChatMessageEvent">
             <Grid Margin="0,2" Padding="4">
-                <VisualStateManager.VisualStateGroups>
-                    <VisualStateGroup x:Name="CommonStates">
-                        <VisualState x:Name="Normal"/>
-                        <VisualState x:Name="PointerOver">
-                            <Storyboard>
-                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverBackground" Storyboard.TargetProperty="Opacity">
-                                    <DiscreteObjectKeyFrame KeyTime="0" Value="0.1"/>
-                                </ObjectAnimationUsingKeyFrames>
-                            </Storyboard>
-                        </VisualState>
-                    </VisualStateGroup>
-                </VisualStateManager.VisualStateGroups>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <Border x:Name="HoverBackground" Background="{ThemeResource SystemControlHighlightListLowBrush}" CornerRadius="2" Opacity="0" Grid.ColumnSpan="3"/>
-                <Ellipse Grid.Column="0" Style="{StaticResource ProfilePictureEllipseStyle}" Visibility="{Binding Platform, Converter={StaticResource PlatformToVisibilityConverter}}">
-                    <Ellipse.Fill>
-                        <ImageBrush ImageSource="{Binding ProfileImageUrl, FallbackValue={StaticResource DefaultProfilePicFallbackBrush}}" Stretch="UniformToFill"/>
-                    </Ellipse.Fill>
-                </Ellipse>
-                <Grid Grid.Column="1" Margin="{Binding Platform, Converter={StaticResource PlatformToMarginConverter}}">
-                    <RichTextBlock helpers:RichTextBlockEventHelper.ChatEventSource="{Binding}" TextWrapping="Wrap" VerticalAlignment="Top" IsTextSelectionEnabled="True" FontSize="{ThemeResource ControlContentThemeFontSize}">
-                        <RichTextBlock.Resources>
-                            <Style TargetType="Paragraph">
-                                <Setter Property="Margin" Value="0"/>
-                            </Style>
-                        </RichTextBlock.Resources>
-                    </RichTextBlock>
-                    <Border Background="{ThemeResource SystemControlHighlightAccentBrush}" Opacity="0.1" CornerRadius="2" Margin="-2" IsHitTestVisible="False" Visibility="{Binding IsHighlight, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                    <VisualStateManager.VisualStateGroups>
+                        <VisualStateGroup x:Name="CommonStates">
+                            <VisualState x:Name="Normal"/>
+                            <VisualState x:Name="PointerOver">
+                                <Storyboard>
+                                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverBackground" Storyboard.TargetProperty="Opacity">
+                                        <DiscreteObjectKeyFrame KeyTime="0" Value="0.1"/>
+                                    </ObjectAnimationUsingKeyFrames>
+                                </Storyboard>
+                            </VisualState>
+                        </VisualStateGroup>
+                    </VisualStateManager.VisualStateGroups>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Border x:Name="HoverBackground" Background="{ThemeResource SystemControlHighlightListLowBrush}" CornerRadius="2" Opacity="0" Grid.ColumnSpan="3"/>
+                    <Ellipse Grid.Column="0" Style="{StaticResource ProfilePictureEllipseStyle}" Visibility="{Binding Platform, Converter={StaticResource PlatformToVisibilityConverter}}">
+                        <Ellipse.Fill>
+                            <ImageBrush ImageSource="{Binding ProfileImageUrl, FallbackValue={StaticResource DefaultProfilePicFallbackBrush}}" Stretch="UniformToFill"/>
+                        </Ellipse.Fill>
+                    </Ellipse>
+                    <Grid Grid.Column="1" Margin="{Binding Platform, Converter={StaticResource PlatformToMarginConverter}}">
+                        <RichTextBlock helpers:RichTextBlockEventHelper.ChatEventSource="{Binding}" TextWrapping="Wrap" VerticalAlignment="Top" IsTextSelectionEnabled="True" FontSize="{ThemeResource ControlContentThemeFontSize}">
+                            <RichTextBlock.Resources>
+                                <Style TargetType="Paragraph">
+                                    <Setter Property="Margin" Value="0"/>
+                                </Style>
+                            </RichTextBlock.Resources>
+                        </RichTextBlock>
+                        <Border Background="{ThemeResource SystemControlHighlightAccentBrush}" Opacity="0.1" CornerRadius="2" Margin="-2" IsHitTestVisible="False" Visibility="{Binding IsHighlight, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                    </Grid>
+                    <Button Grid.Column="2" Style="{StaticResource MoreButtonStyle}" DataContext="{Binding}" IsEnabled="{Binding Platform, Converter={StaticResource PlatformToIsEnabledConverter}}">
+                        <Button.Flyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem Text="Timeout User (10m)" Icon="Clock" IsEnabled="{Binding Platform, Converter={StaticResource PlatformToIsEnabledConverter}}" Command="{Binding DataContext.TimeoutUserCommand, ElementName=ChatListView}" CommandParameter="{Binding}"/>
+                                <MenuFlyoutItem Text="Ban User" Icon="BlockContact" IsEnabled="{Binding Platform, Converter={StaticResource PlatformToIsEnabledConverter}}" Command="{Binding DataContext.BanUserCommand, ElementName=ChatListView}" CommandParameter="{Binding}"/>
+                                <MenuFlyoutSeparator/>
+                                <MenuFlyoutItem Text="Delete Message" Icon="Delete" IsEnabled="{Binding Platform, Converter={StaticResource PlatformToIsEnabledConverter}}" Command="{Binding DataContext.DeleteMessageCommand, ElementName=ChatListView}" CommandParameter="{Binding}"/>
+                            </MenuFlyout>
+                        </Button.Flyout>
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Moderation Actions (YouTube Only)"/>
+                        </ToolTipService.ToolTip>
+                    </Button>
                 </Grid>
-                <Button Grid.Column="2" Style="{StaticResource MoreButtonStyle}" DataContext="{Binding}" IsEnabled="{Binding Platform, Converter={StaticResource PlatformToIsEnabledConverter}}">
-                    <Button.Flyout>
-                        <MenuFlyout>
-                            <MenuFlyoutItem Text="Timeout User (10m)" Icon="Clock" IsEnabled="{Binding Platform, Converter={StaticResource PlatformToIsEnabledConverter}}" Command="{Binding DataContext.TimeoutUserCommand, ElementName=ChatListView}" CommandParameter="{Binding}"/>
-                            <MenuFlyoutItem Text="Ban User" Icon="BlockContact" IsEnabled="{Binding Platform, Converter={StaticResource PlatformToIsEnabledConverter}}" Command="{Binding DataContext.BanUserCommand, ElementName=ChatListView}" CommandParameter="{Binding}"/>
-                            <MenuFlyoutSeparator/>
-                            <MenuFlyoutItem Text="Delete Message" Icon="Delete" IsEnabled="{Binding Platform, Converter={StaticResource PlatformToIsEnabledConverter}}" Command="{Binding DataContext.DeleteMessageCommand, ElementName=ChatListView}" CommandParameter="{Binding}"/>
-                        </MenuFlyout>
-                    </Button.Flyout>
-                    <ToolTipService.ToolTip>
-                        <ToolTip Content="Moderation Actions (YouTube Only)"/>
-                    </ToolTipService.ToolTip>
-                </Button>
-            </Grid>
         </DataTemplate>
+
         <DataTemplate x:Key="DonationDataTemplate" x:DataType="models_events:DonationEvent">
             <Border Background="{Binding Converter={StaticResource DonationBackgroundBrushConverter}}" BorderBrush="{Binding Converter={StaticResource DonationBorderBrushConverter}}" BorderThickness="1" CornerRadius="4" Margin="0,2">
                 <Grid Padding="0">
@@ -278,6 +275,7 @@
                 </Grid>
             </Border>
         </DataTemplate>
+
         <DataTemplate x:Key="MembershipDataTemplate" x:DataType="models_events:MembershipEvent">
             <Border Background="#1A0F9D58" BorderBrush="#FF0F9D58" CornerRadius="4" BorderThickness="1" Margin="0,2">
                 <Grid Padding="6,4">
@@ -338,7 +336,7 @@
                 </Grid>
             </Border>
         </DataTemplate>
-        <!-- Other DataTemplates omitted for brevity -->
+
         <DataTemplate x:Key="SubscriptionDataTemplate" x:DataType="models_events:SubscriptionEvent">
             <Border Background="#108A2BE2" BorderBrush="#FF8A2BE2" BorderThickness="1,0,0,0" Margin="0,2" Padding="4,2">
                 <Grid>
@@ -378,6 +376,7 @@
                 </Grid>
             </Border>
         </DataTemplate>
+
         <DataTemplate x:Key="FollowDataTemplate" x:DataType="models_events:FollowEvent">
             <Border Background="#10F44336" BorderBrush="#FFF44336" BorderThickness="1,0,0,0" Margin="0,2" Padding="4,2">
                 <Grid>
@@ -392,6 +391,7 @@
                 </Grid>
             </Border>
         </DataTemplate>
+
         <DataTemplate x:Key="RaidDataTemplate" x:DataType="models_events:RaidEvent">
             <Border Background="#10FFC107" BorderBrush="#FFFFC107" BorderThickness="1,0,0,0" Margin="0,2" Padding="4,2">
                 <Grid>
@@ -410,6 +410,7 @@
                 </Grid>
             </Border>
         </DataTemplate>
+
         <DataTemplate x:Key="HostDataTemplate" x:DataType="models_events:HostEvent">
             <Border Background="#1003A9F4" BorderBrush="#FF03A9F4" BorderThickness="1,0,0,0" Margin="0,2" Padding="4,2">
                 <Grid>
@@ -424,6 +425,7 @@
                 </Grid>
             </Border>
         </DataTemplate>
+
         <DataTemplate x:Key="SystemMessageDataTemplate" x:DataType="models_events:SystemMessageEvent">
             <Border Background="#1A808080" BorderBrush="Gray" BorderThickness="1,0,0,0" Margin="0,2" Padding="4,2">
                 <Grid>
@@ -438,6 +440,7 @@
                 </Grid>
             </Border>
         </DataTemplate>
+
         <DataTemplate x:Key="BotMessageDataTemplate" x:DataType="models_events:BotMessageEvent">
             <Border Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="4" Margin="0,2" Padding="4,2">
                 <Grid>
@@ -456,6 +459,7 @@
                 </Grid>
             </Border>
         </DataTemplate>
+
         <DataTemplate x:Key="CommandInvocationDataTemplate" x:DataType="models_events:CommandInvocationEvent">
             <Border Background="{ThemeResource SystemControlBackgroundListLowBrush}" BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="4" Margin="0,2" Padding="4,6">
                 <StackPanel Spacing="4">
@@ -496,11 +500,13 @@
                 </StackPanel>
             </Border>
         </DataTemplate>
+
         <DataTemplate x:Key="DefaultTemplate">
             <TextBlock Opacity="0.5" FontStyle="Italic" Margin="42,2,0,2">
                  <Run Text="{Binding Platform, Mode=OneTime}"/><Run Text=" ["/><Run Text="{Binding OriginatingAccountId, Mode=OneTime}"/><Run Text="]: "/><Run Text="{Binding}"/>
             </TextBlock>
         </DataTemplate>
+
         <DataTemplate x:Key="YouTubePollUpdateDataTemplate" x:DataType="models_events:YouTubePollUpdateEvent">
             <Border Background="#10808080" BorderBrush="#FFB0B0B0" BorderThickness="1" CornerRadius="4" Margin="0,2" Padding="6,4">
                 <StackPanel Spacing="5">
@@ -571,7 +577,6 @@
             ItemsSource="{Binding Events}"
             ItemTemplateSelector="{StaticResource EventSelector}"
             HorizontalContentAlignment="Stretch"
-            ContainerContentChanging="ChatListView_ContainerContentChanging"
             ScrollViewer.VerticalScrollBarVisibility="Auto"
             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
 

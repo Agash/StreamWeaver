@@ -1,5 +1,4 @@
-﻿// New File: Core/Services/Tts/CompositeTtsService.cs
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.Logging;
 using StreamWeaver.Core.Messaging;
@@ -14,7 +13,7 @@ namespace StreamWeaver.Core.Services.Tts;
 /// delegating to the appropriate engine-specific service. Handles event processing
 /// and queuing (basic queuing implemented here).
 /// </summary>
-public sealed class CompositeTtsService : ITtsService, IRecipient<NewEventMessage>, IDisposable
+public sealed partial class CompositeTtsService : ITtsService, IRecipient<NewEventMessage>, IDisposable
 {
     private readonly ILogger<CompositeTtsService> _logger;
     private readonly ISettingsService _settingsService;
@@ -74,34 +73,32 @@ public sealed class CompositeTtsService : ITtsService, IRecipient<NewEventMessag
         }
     }
 
-    private void OnSettingsUpdated(object? sender, EventArgs e)
-    {
+    private void OnSettingsUpdated(object? sender, EventArgs e) =>
         // Settings like rate/volume/voice are applied when SpeakAsync is called
         // or when GetInstalledVoicesAsync is called, ensuring the current settings are used.
         // We might need to re-apply if settings change *while* speaking, but the queue handles this.
-        _logger.LogDebug("Settings updated event received by CompositeTtsService.");
-        // Clear queue if TTS is disabled? Or let it finish? For now, let it finish.
-        // if (!_settingsService.CurrentSettings.TextToSpeech.Enabled) { ClearQueue(); }
-    }
+        _logger.LogDebug("Settings updated event received by CompositeTtsService.");// Clear queue if TTS is disabled? Or let it finish? For now, let it finish.// if (!_settingsService.CurrentSettings.TextToSpeech.Enabled) { ClearQueue(); }
 
     public async Task<IEnumerable<string>> GetInstalledWindowsVoicesAsync()
     {
-        if (_ttsEngines.TryGetValue(TtsSettings.WindowsEngine, out var engine))
+        if (_ttsEngines.TryGetValue(TtsSettings.WindowsEngine, out IEngineSpecificTtsService? engine))
         {
             return await engine.GetInstalledVoicesAsync();
         }
+
         _logger.LogWarning("Windows TTS engine not found.");
-        return Enumerable.Empty<string>();
+        return [];
     }
 
     public async Task<IEnumerable<string>> GetInstalledKokoroVoicesAsync()
     {
-        if (_ttsEngines.TryGetValue(TtsSettings.KokoroEngine, out var engine))
+        if (_ttsEngines.TryGetValue(TtsSettings.KokoroEngine, out IEngineSpecificTtsService? engine))
         {
             return await engine.GetInstalledVoicesAsync();
         }
+
         _logger.LogWarning("Kokoro TTS engine not found.");
-        return Enumerable.Empty<string>();
+        return [];
     }
 
     // These Set methods apply the setting to the *currently selected* engine immediately.
@@ -109,7 +106,7 @@ public sealed class CompositeTtsService : ITtsService, IRecipient<NewEventMessag
     {
         if (_settingsService.CurrentSettings.TextToSpeech.SelectedEngine == TtsSettings.WindowsEngine)
         {
-            if (_ttsEngines.TryGetValue(TtsSettings.WindowsEngine, out var engine))
+            if (_ttsEngines.TryGetValue(TtsSettings.WindowsEngine, out IEngineSpecificTtsService? engine))
             {
                 engine.SetVoice(voiceName);
             }
@@ -120,7 +117,7 @@ public sealed class CompositeTtsService : ITtsService, IRecipient<NewEventMessag
     {
         if (_settingsService.CurrentSettings.TextToSpeech.SelectedEngine == TtsSettings.KokoroEngine)
         {
-            if (_ttsEngines.TryGetValue(TtsSettings.KokoroEngine, out var engine))
+            if (_ttsEngines.TryGetValue(TtsSettings.KokoroEngine, out IEngineSpecificTtsService? engine))
             {
                 engine.SetVoice(voiceName);
             }
@@ -130,7 +127,7 @@ public sealed class CompositeTtsService : ITtsService, IRecipient<NewEventMessag
     public void SetVolume(int volume)
     {
         string selectedEngineId = _settingsService.CurrentSettings.TextToSpeech.SelectedEngine;
-        if (_ttsEngines.TryGetValue(selectedEngineId, out var engine))
+        if (_ttsEngines.TryGetValue(selectedEngineId, out IEngineSpecificTtsService? engine))
         {
             engine.SetVolume(volume);
         }
@@ -139,7 +136,7 @@ public sealed class CompositeTtsService : ITtsService, IRecipient<NewEventMessag
     public void SetRate(int rate)
     {
         string selectedEngineId = _settingsService.CurrentSettings.TextToSpeech.SelectedEngine;
-        if (_ttsEngines.TryGetValue(selectedEngineId, out var engine))
+        if (_ttsEngines.TryGetValue(selectedEngineId, out IEngineSpecificTtsService? engine))
         {
             engine.SetRate(rate);
         }
@@ -162,21 +159,15 @@ public sealed class CompositeTtsService : ITtsService, IRecipient<NewEventMessag
             return Task.CompletedTask;
         }
 
-        // Normalize text before adding to queue
-        // Note: If called directly (e.g., Test TTS), normalization might happen twice.
-        // Consider if direct SpeakAsync calls should bypass normalization here.
-        // For now, assume normalization is desired even for test calls.
-        string normalizedText = _formattingService._textNormalizer.Normalize(textToSpeak); // Access internal field for now
-
-        if (string.IsNullOrWhiteSpace(normalizedText))
+        if (string.IsNullOrWhiteSpace(textToSpeak))
         {
             _logger.LogDebug("SpeakAsync skipped: Text became empty after normalization. Original: '{Original}'", textToSpeak);
             return Task.CompletedTask;
         }
 
 
-        _logger.LogDebug("Adding text to speech queue: \"{NormalizedText}\"", normalizedText);
-        _speechQueue.Enqueue(normalizedText);
+        _logger.LogDebug("Adding text to speech queue: \"{TextToSpeak}\"", textToSpeak);
+        _speechQueue.Enqueue(textToSpeak);
 
         return Task.CompletedTask; // Return immediately, background task handles speaking
     }
@@ -235,7 +226,7 @@ public sealed class CompositeTtsService : ITtsService, IRecipient<NewEventMessag
                     if (cancellationToken.IsCancellationRequested) break;
 
                     string selectedEngineId = _settingsService.CurrentSettings.TextToSpeech.SelectedEngine;
-                    if (_ttsEngines.TryGetValue(selectedEngineId, out var engine))
+                    if (_ttsEngines.TryGetValue(selectedEngineId, out IEngineSpecificTtsService? engine))
                     {
                         _logger.LogDebug("Processing queued speech item using engine '{EngineId}': \"{TextToSpeak}\"", selectedEngineId, textToSpeak);
 
@@ -259,7 +250,7 @@ public sealed class CompositeTtsService : ITtsService, IRecipient<NewEventMessag
 
                         await engine.SpeakAsync(textToSpeak);
                         // Optional: Add a small delay between utterances?
-                        // await Task.Delay(TimeSpan.FromMilliseconds(200), cancellationToken);
+                        await Task.Delay(TimeSpan.FromMilliseconds(200), cancellationToken);
                     }
                     else
                     {
@@ -287,6 +278,7 @@ public sealed class CompositeTtsService : ITtsService, IRecipient<NewEventMessag
                 await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);
             }
         }
+
         _logger.LogInformation("Speech queue processing task finished.");
     }
 
@@ -295,6 +287,7 @@ public sealed class CompositeTtsService : ITtsService, IRecipient<NewEventMessag
         _logger.LogInformation("Clearing speech queue...");
         // Note: ConcurrentQueue doesn't have a Clear(). We need to dequeue until empty.
         while (_speechQueue.TryDequeue(out _)) { }
+
         _logger.LogInformation("Speech queue cleared.");
         // TODO: Should we also cancel the *currently speaking* item if queue is cleared?
         // If using System.Speech, _synthesizer.SpeakAsyncCancelAll() could be called here.
@@ -304,10 +297,7 @@ public sealed class CompositeTtsService : ITtsService, IRecipient<NewEventMessag
 
     // ProcessEventForTts is effectively handled by Receive(NewEventMessage) now.
     // This method is kept to fulfill the ITtsService interface but delegates.
-    public void ProcessEventForTts(BaseEvent eventData)
-    {
-        Receive(new NewEventMessage(eventData));
-    }
+    public void ProcessEventForTts(BaseEvent eventData) => Receive(new NewEventMessage(eventData));
 
 
     public void Dispose()
@@ -345,6 +335,7 @@ public sealed class CompositeTtsService : ITtsService, IRecipient<NewEventMessag
             {
                 _logger.LogError(ex, "Error waiting for speech queue task during dispose.");
             }
+
             _cts.Dispose();
             _cts = null;
             _processingTask = null;
@@ -352,7 +343,7 @@ public sealed class CompositeTtsService : ITtsService, IRecipient<NewEventMessag
 
         // Dispose engine-specific services
         _logger.LogDebug("Disposing engine-specific TTS services...");
-        foreach (var engine in _ttsEngines.Values)
+        foreach (IEngineSpecificTtsService engine in _ttsEngines.Values)
         {
             try
             {
@@ -363,6 +354,7 @@ public sealed class CompositeTtsService : ITtsService, IRecipient<NewEventMessag
                 _logger.LogWarning(ex, "Error disposing engine {EngineId}.", engine.EngineId);
             }
         }
+
         _ttsEngines.Clear();
 
         _speakLock.Dispose();

@@ -209,7 +209,6 @@ public partial class MainChatViewModel : ObservableObject, IRecipient<NewEventMe
              SendMessageCommand.NotifyCanExecuteChanged();
          });
 
-    // Receive methods omitted for brevity...
     public void Receive(NewEventMessage message)
     {
         if (_isDisposed) return;
@@ -223,7 +222,13 @@ public partial class MainChatViewModel : ObservableObject, IRecipient<NewEventMe
             }
 
             Events.Add(message.Value);
-            _logger.LogTrace("Added event {EventType} ({EventId}) to display collection.", message.Value.GetType().Name, message.Value.Id);
+
+            // Log AFTER adding to confirm UI thread execution and collection state
+            _logger.LogDebug("Added event {EventType} ({EventId}) to display collection. New count: {Count}",
+                message.Value.GetType().Name,
+                message.Value.Id,
+                Events.Count); // Log the count *after* adding
+
             while (Events.Count > MAX_MESSAGES)
             {
                 BaseEvent removed = Events[0];

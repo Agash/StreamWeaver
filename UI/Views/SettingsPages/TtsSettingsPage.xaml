@@ -94,10 +94,21 @@
                     <ToolTip Content="Adjust the speaking rate of the TTS voice (-10 to +10)."/>
                 </ToolTipService.ToolTip>
             </Slider>
+
+            <TextBox Header="Text to Speak for Test"
+                     Text="{Binding TtsTestPhrase, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     PlaceholderText="Enter text here to test TTS..."
+                     Margin="0,10,0,0"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     Height="80"
+                     IsEnabled="{Binding TtsSettings.Enabled}"/>
+            
             <Button Content="Test TTS"
                     Command="{Binding TestTtsCommand}"
                     IsEnabled="{Binding TtsSettings.Enabled}"
-                    HorizontalAlignment="Left">
+                    HorizontalAlignment="Left"
+                    Margin="0,10,0,0">
                 <ToolTipService.ToolTip>
                     <ToolTip Content="Play a sample message using the current settings."/>
                 </ToolTipService.ToolTip>

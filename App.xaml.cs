@@ -20,6 +20,7 @@ using StreamWeaver.UI.ViewModels;
 using TTSTextNormalization.DependencyInjection;
 using TTSTextNormalization.Rules;
 using Velopack;
+using Velopack.Exceptions;
 using Velopack.Sources;
 using YTLiveChat.Contracts;
 
@@ -44,18 +45,21 @@ public partial class App : Application
 
     public App()
     {
+#if !DEBUG
         VelopackApp.Build()
             .OnFirstRun((v) => { /* First run logic here */ })
             .Run();
-
+#endif
         Services = ConfigureServices();
         s_serviceProvider = Services;
         s_logger = Services.GetRequiredService<ILogger<App>>();
         InitializeComponent();
 
+#if !DEBUG
         // Start checking for updates in the background shortly after launch
         // Delay slightly to allow the main window to initialize visually
         _ = CheckForUpdatesInBackgroundAsync(TimeSpan.FromSeconds(5));
+#endif
     }
 
     public static T GetService<T>()
@@ -314,7 +318,7 @@ public partial class App : Application
 
         }
 #if DEBUG
-        catch (Exception ex) when (ex.Message == "Cannot perform this operation in an application which is not installed.")
+        catch (NotInstalledException ex)
         {
             s_logger.LogDebug(ex, "Update check failed because unpackaged execution (DEBUG mode)");
             lock (s_updateLock)

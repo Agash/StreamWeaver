@@ -1,7 +1,8 @@
 using System.Collections.Specialized;
+using System.Diagnostics;
 using CommunityToolkit.WinUI;
 using Microsoft.Extensions.Logging;
-using Microsoft.UI.Dispatching; // Keep this for DispatcherQueue itself
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -30,8 +31,17 @@ public sealed partial class MainChatView : Page
         }
         catch (Exception ex)
         {
-            App.GetService<ILogger<MainChatView>>()
-                ?.LogCritical(ex, "FATAL: Failed to resolve MainChatViewModel or ILogger. View cannot function.");
+            // Attempt to get logger again just for this critical failure
+            try
+            {
+                App.GetService<ILogger<MainChatView>>()
+                    ?.LogCritical(ex, "FATAL: Failed to resolve MainChatViewModel or ILogger. View cannot function.");
+            }
+            catch
+            {
+                Debug.WriteLine($"[MainChatView.Ctor] FATAL: Failed to resolve dependencies: {ex}");
+            }
+
             throw new InvalidOperationException("Failed to initialize MainChatView dependencies.", ex);
         }
     }
@@ -49,10 +59,8 @@ public sealed partial class MainChatView : Page
         {
             _logger.LogError("ViewModel or ViewModel.Events collection is null on Page_Loaded. Cannot subscribe for auto-scroll.");
         }
-
         FindAndHookScrollViewer();
         _logger.LogDebug("Scheduling initial ScrollToBottom after a short delay.");
-
         _ = DispatcherQueue.EnqueueAsync(async () =>
         {
             _logger.LogTrace("Executing delayed initial ScrollToBottom...");
@@ -82,7 +90,9 @@ public sealed partial class MainChatView : Page
             }
             else
             {
-                _logger.LogWarning("Could not find the internal ScrollViewer for ChatListView on initial load. Auto-scroll may be delayed or disabled.");
+                _logger.LogWarning(
+                    "Could not find the internal ScrollViewer for ChatListView on initial load. Auto-scroll may be delayed or disabled."
+                );
             }
         }
         else
@@ -145,8 +155,11 @@ public sealed partial class MainChatView : Page
             {
                 if (_shouldScrollToBottom)
                 {
-                    _logger.LogDebug("User scrolled up ({VerticalOffset}/{ScrollableHeight}). Disabling auto-scroll.",
-                        _chatScrollViewer.VerticalOffset, _chatScrollViewer.ScrollableHeight);
+                    _logger.LogDebug(
+                        "User scrolled up ({VerticalOffset}/{ScrollableHeight}). Disabling auto-scroll.",
+                        _chatScrollViewer.VerticalOffset,
+                        _chatScrollViewer.ScrollableHeight
+                    );
                     _shouldScrollToBottom = false;
                 }
             }
@@ -167,8 +180,7 @@ public sealed partial class MainChatView : Page
         }
 
         await Task.Yield(); // Allow layout to potentially update
-        // Short delay might still be helpful sometimes after Yield
-        await Task.Delay(50);
+        await Task.Delay(50); // Short delay might still be helpful
 
         if (ChatListView.Items.Count > 0)
         {
@@ -208,7 +220,6 @@ public sealed partial class MainChatView : Page
             if (result != null)
                 return result;
         }
-
         return null;
     }
 
@@ -219,20 +230,10 @@ public sealed partial class MainChatView : Page
         {
             ViewModel.Events.CollectionChanged -= Events_CollectionChanged;
         }
-
         if (_chatScrollViewer != null)
         {
             _chatScrollViewer.ViewChanged -= ScrollViewer_ViewChanged;
+            // Consider setting _chatScrollViewer = null here if memory leaks are suspected later
         }
-    }
-
-    private void ChatListView_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
-    {
-        if (args.InRecycleQueue)
-        {
-            _logger.LogTrace("ListView item container entering recycle queue. Phase: {Phase}", args.Phase);
-        }
-
-        args.Handled = true; // Mark handled to potentially improve performance
     }
 }

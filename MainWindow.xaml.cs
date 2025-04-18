@@ -1,6 +1,10 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using StreamWeaver.Core.Plugins;
+using StreamWeaver.Core.Services.Tts;
+using StreamWeaver.Core.Services.Web;
+using StreamWeaver.Core.Services;
 using StreamWeaver.UI.ViewModels;
 using StreamWeaver.UI.Views;
 
@@ -107,5 +111,60 @@ public sealed partial class MainWindow : Window
         {
             _logger.LogDebug("Navigation requested to {PageType}, but it is already the current page. Navigation skipped.", pageType.Name);
         }
+    }
+
+    /// <summary>
+    /// Handles the Window Closed event to ensure critical services are disposed.
+    /// </summary>
+    private void MainWindow_Closed(object sender, WindowEventArgs args)
+    {
+        _logger.LogInformation("MainWindow_Closed event triggered. Explicitly disposing services...");
+
+        // Dispose critical services that might hold threads or resources
+        try
+        {
+            // Dispose TTS Service Chain
+            var ttsService = App.GetService<ITtsService>();
+            if (ttsService is IDisposable disposableTts)
+            {
+                _logger.LogDebug("Disposing ITtsService...");
+                disposableTts.Dispose();
+                _logger.LogDebug("ITtsService disposed.");
+            }
+
+            // Dispose Web Server Service
+            var webServerService = App.GetService<WebServerService>();
+            _logger.LogDebug("Disposing WebServerService...");
+            webServerService.Dispose(); // Note: Dispose is async void, consider IAsyncDisposable later
+            _logger.LogDebug("WebServerService disposed.");
+
+            // Dispose Unified Event Service (which might dispose platform clients)
+            var unifiedEventService = App.GetService<UnifiedEventService>();
+            if (unifiedEventService is IDisposable disposableUES)
+            {
+                _logger.LogDebug("Disposing UnifiedEventService...");
+                disposableUES.Dispose();
+                _logger.LogDebug("UnifiedEventService disposed.");
+            }
+
+            // Dispose Plugin Service (which shuts down plugins)
+            var pluginService = App.GetService<PluginService>();
+            _logger.LogDebug("Disposing PluginService (initiating shutdown)...");
+            // PluginService shutdown is async, wait briefly but don't block exit indefinitely
+            Task.Run(() => pluginService.ShutdownPluginsAsync()).Wait(TimeSpan.FromSeconds(2));
+            _logger.LogDebug("PluginService shutdown initiated.");
+
+            // TODO: Dispose other potentially problematic services if needed
+
+            _logger.LogInformation("Explicit service disposal completed in MainWindow_Closed.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during explicit service disposal in MainWindow_Closed.");
+        }
+
+        // It's generally recommended to let the application exit naturally after the main window closes,
+        // but explicitly calling Exit can be a final measure if processes still hang. Use with caution.
+        // Application.Current.Exit();
     }
 }

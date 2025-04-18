@@ -8,7 +8,7 @@ namespace StreamWeaver.Core.Services.Tts;
 /// Provides Text-to-Speech (TTS) functionality using the Windows built-in SpeechSynthesizer.
 /// Implements the engine-specific interface for TTS operations.
 /// </summary>
-public sealed class WindowsTtsService(ILogger<WindowsTtsService> logger) : IEngineSpecificTtsService
+public sealed partial class WindowsTtsService(ILogger<WindowsTtsService> logger) : IEngineSpecificTtsService
 {
     private readonly ILogger<WindowsTtsService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private SpeechSynthesizer? _synthesizer;
@@ -44,6 +44,7 @@ public sealed class WindowsTtsService(ILogger<WindowsTtsService> logger) : IEngi
             _logger.LogCritical(ex, "Failed to initialize SpeechSynthesizer. Windows TTS will be disabled.");
             _synthesizer = null;
         }
+
         return Task.CompletedTask; // Initialization is synchronous here
     }
 
@@ -71,7 +72,7 @@ public sealed class WindowsTtsService(ILogger<WindowsTtsService> logger) : IEngi
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting installed Windows voices.");
-                return Enumerable.Empty<string>();
+                return [];
             }
         });
     }
@@ -83,6 +84,7 @@ public sealed class WindowsTtsService(ILogger<WindowsTtsService> logger) : IEngi
             _logger.LogWarning("SetVoice skipped: Synthesizer not available.");
             return;
         }
+
         if (string.IsNullOrWhiteSpace(voiceName))
         {
             _logger.LogWarning("SetVoice called with null or empty voice name.");
@@ -195,6 +197,7 @@ public sealed class WindowsTtsService(ILogger<WindowsTtsService> logger) : IEngi
                     _logger.LogTrace("Cancelling previous Windows speech before speaking new text.");
                     _synthesizer.SpeakAsyncCancelAll();
                 }
+
                 _logger.LogInformation("Speaking (Windows): \"{TextToSpeak}\"", textToSpeak);
                 _synthesizer.SpeakAsync(textToSpeak); // Fire-and-forget within the Task
             }
@@ -233,6 +236,7 @@ public sealed class WindowsTtsService(ILogger<WindowsTtsService> logger) : IEngi
                     {
                         _synthesizer.SpeakAsyncCancelAll();
                     }
+
                     _synthesizer.Dispose();
                     _logger.LogInformation("Windows SpeechSynthesizer disposed.");
                 }
@@ -240,10 +244,13 @@ public sealed class WindowsTtsService(ILogger<WindowsTtsService> logger) : IEngi
                 {
                     _logger.LogWarning(ex, "Exception during Windows SpeechSynthesizer disposal.");
                 }
+
                 _synthesizer = null;
             }
+
             _logger.LogInformation("Windows TTS Engine Service disposed.");
         }
+
         _isDisposed = true;
     }
 }

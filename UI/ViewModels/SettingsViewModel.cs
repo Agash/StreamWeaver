@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -78,6 +79,13 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
     public ObservableCollection<string> TtsEngineOptions { get; } = [TtsSettings.WindowsEngine, TtsSettings.KokoroEngine];
 
     /// <summary>
+    /// TTS Test Phrase that can be modified by the user.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(TestTtsCommand))]
+    public partial string? TtsTestPhrase { get; set; } = "This is a test of the text to speech engine."; 
+
+    /// <summary>
     /// The calculated URL for the chat browser source overlay.
     /// </summary>
     [ObservableProperty]
@@ -108,6 +116,7 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
     /// </summary>
     [ObservableProperty]
     public partial SettingsSection? SelectedSection { get; set; }
+
 
     /// <summary>
     /// A read-only view of the plugins currently loaded by the PluginService.
@@ -235,7 +244,6 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
         _dispatcherQueue = dispatcherQueue;
 
         _logger.LogInformation("Initializing SettingsViewModel.");
-
         LoadedPlugins = new ReadOnlyObservableCollection<IPlugin>(_pluginService.LoadedPlugins);
 
         SettingsSections.Add(
@@ -289,14 +297,15 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
 
         SelectedSection = SettingsSections.FirstOrDefault();
 
-        NotifyAllPropertiesChanged();
-        LoadInitialTtsVoices();
+        NotifyAllPropertiesChanged(); // Ensure initial state reflects loaded settings
+        LoadInitialTtsVoices(); // Load voices for the initially selected engine
         UpdateStreamlabsStatus();
         HookPropertyListeners();
         UpdateOverlayUrl();
 
         _settingsService.SettingsUpdated += SettingsService_SettingsUpdated;
         _messenger.Register(this);
+
         _logger.LogDebug("Subscribed to SettingsService.SettingsUpdated event.");
     }
 
@@ -323,7 +332,6 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
     public async void Receive(ConnectionsUpdatedMessage message)
     {
         _logger.LogInformation("ConnectionsUpdatedMessage received. Refreshing account statuses.");
-
         await _dispatcherQueue.EnqueueAsync(() =>
         {
             if (!_isDisposed)
@@ -341,7 +349,6 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
         if (_isDisposed)
             return;
         _logger.LogDebug("Refreshing Twitch and YouTube account statuses...");
-
         if (Connections?.TwitchAccounts != null)
         {
             foreach (TwitchAccount acc in Connections.TwitchAccounts)
@@ -350,7 +357,6 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
                 {
                     ConnectionStatus currentStatus = _twitchClient.GetStatus(acc.UserId);
                     string? currentMessage = _twitchClient.GetStatusMessage(acc.UserId);
-
                     if (acc.Status != currentStatus || acc.StatusMessage != currentMessage)
                     {
                         acc.Status = currentStatus;
@@ -365,7 +371,6 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
                 }
             }
         }
-
         if (Connections?.YouTubeAccounts != null)
         {
             foreach (YouTubeAccount acc in Connections.YouTubeAccounts)
@@ -388,7 +393,6 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
                 }
             }
         }
-
         _logger.LogDebug("Account status refresh complete.");
     }
 
@@ -425,7 +429,7 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
     private void HookPropertyListeners()
     {
         _logger.LogTrace("Hooking property listeners.");
-        UnhookPropertyListeners();
+        UnhookPropertyListeners(); // Ensure no double-hooking
 
         if (Credentials != null)
             Credentials.PropertyChanged += NestedSetting_PropertyChanged;
@@ -474,7 +478,9 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
             ModuleSettings.Goals.PropertyChanged -= NestedSetting_PropertyChanged;
 
         if (_streamlabsClient is INotifyPropertyChanged slNotifier)
+        {
             slNotifier.PropertyChanged -= StreamlabsClient_PropertyChanged;
+        }
     }
 
     /// <summary>
@@ -494,28 +500,25 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
         switch (sender)
         {
             case ApiCredentials:
-
                 OnPropertyChanged(nameof(IsTwitchConfigured));
                 OnPropertyChanged(nameof(IsYouTubeConfigured));
                 ConnectTwitchAccountCommand.NotifyCanExecuteChanged();
                 ConnectYouTubeAccountCommand.NotifyCanExecuteChanged();
                 break;
             case ConnectionSettings:
-
                 if (e.PropertyName is nameof(ConnectionSettings.EnableStreamlabs) or nameof(ConnectionSettings.StreamlabsTokenId))
                 {
                     OnPropertyChanged(nameof(IsStreamlabsTokenSetup));
                     DisableStreamlabsCommand.NotifyCanExecuteChanged();
                 }
-
                 break;
-            case OverlaySettings overlaySettings:
-
+            case OverlaySettings _:
                 if (e.PropertyName == nameof(OverlaySettings.WebServerPort))
                     UpdateOverlayUrl();
+                // Send update for *any* change in OverlaySettings for now
+                _messenger.Send(new OverlaySettingsUpdateMessage(OverlaySettings));
                 break;
             case ChatOverlaySettings:
-
                 _logger.LogDebug("ChatOverlaySettings changed ({PropertyName}), sending update message.", e.PropertyName);
                 _messenger.Send(new OverlaySettingsUpdateMessage(OverlaySettings));
                 break;
@@ -538,14 +541,16 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
                 else if (e.PropertyName == nameof(TtsSettings.SelectedWindowsVoice))
                 {
                     OnPropertyChanged(nameof(SelectedWindowsVoice)); // Update VM property bound to UI
-                    if (SelectedEngine == TtsSettings.WindowsEngine) ApplyVoiceSetting();
+                    if (SelectedEngine == TtsSettings.WindowsEngine)
+                        ApplyVoiceSetting();
                 }
                 else if (e.PropertyName == nameof(TtsSettings.SelectedKokoroVoice))
                 {
                     OnPropertyChanged(nameof(SelectedKokoroVoice)); // Update VM property bound to UI
-                    if (SelectedEngine == TtsSettings.KokoroEngine) ApplyVoiceSetting();
+                    if (SelectedEngine == TtsSettings.KokoroEngine)
+                        ApplyVoiceSetting();
                 }
-                // Apply Rate/Volume changes immediately
+                // Apply Rate/Volume changes immediately via the composite service
                 else if (e.PropertyName == nameof(TtsSettings.Rate))
                 {
                     _ttsService.SetRate(ttsSettings.Rate);
@@ -554,16 +559,17 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
                 {
                     _ttsService.SetVolume(ttsSettings.Volume);
                 }
-
                 break;
-            case ModuleSettings moduleSettings:
+            case ModuleSettings _:
+                // Handle changes within ModuleSettings if needed
                 break;
             case SubathonSettings:
+                // Handle changes within SubathonSettings if needed
                 break;
             case GoalSettings:
+                // Handle changes within GoalSettings if needed
                 break;
             default:
-
                 _logger.LogTrace("Unhandled sender type in NestedSetting_PropertyChanged: {SenderType}", sender?.GetType().Name ?? "null");
                 break;
         }
@@ -614,28 +620,36 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
         TestTtsCommand.NotifyCanExecuteChanged();
         CopyOverlayUrlCommand.NotifyCanExecuteChanged();
         SetupStreamlabsTokenCommand.NotifyCanExecuteChanged();
+        // Add SampleVoiceCommand if it exists
     }
 
+    /// <summary>
+    /// Loads the appropriate voices based on the currently selected engine.
+    /// Uses fire-and-forget for background loading.
+    /// </summary>
     private void LoadInitialTtsVoices()
     {
         // Load voices based on the engine selected in the settings
         if (SelectedEngine == TtsSettings.KokoroEngine)
         {
-            LoadKokoroVoicesAsync();
+            // Fire-and-forget background loading (Suppress CS4014)
+            _ = LoadKokoroVoicesAsync();
         }
         else // Default to Windows
         {
-            LoadWindowsVoicesAsync();
+            // Fire-and-forget background loading (Suppress CS4014)
+            _ = LoadWindowsVoicesAsync();
         }
     }
 
+    /// <summary>
+    /// Handles the change of the selected TTS engine, loading appropriate voices.
+    /// </summary>
     private async void SelectedEngineChanged()
     {
         _logger.LogInformation("Selected TTS Engine changed to: {Engine}", SelectedEngine);
-        // Apply engine change if needed by the service (might be implicit)
-        // _ttsService.SetEngine(SelectedEngine); // Example if service needs explicit switching
-
-        // Load the appropriate voices for the newly selected engine
+        // The CompositeTtsService handles applying the correct engine internally.
+        // We just need to load the voices for the UI.
         if (SelectedEngine == TtsSettings.KokoroEngine)
         {
             await LoadKokoroVoicesAsync();
@@ -644,28 +658,31 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
         {
             await LoadWindowsVoicesAsync();
         }
-        // Ensure the correct voice is applied from settings
+        // Apply the voice setting for the *newly* selected engine
         ApplyVoiceSetting();
     }
 
-
+    /// <summary>
+    /// Applies the currently selected voice (Windows or Kokoro) to the TTS service.
+    /// </summary>
     private void ApplyVoiceSetting()
     {
-        if (_isDisposed) return;
+        if (_isDisposed)
+            return;
         try
         {
             if (SelectedEngine == TtsSettings.KokoroEngine && !string.IsNullOrEmpty(SelectedKokoroVoice))
             {
-                _ttsService.SetKokoroVoice(SelectedKokoroVoice);
+                _ttsService.SetKokoroVoice(SelectedKokoroVoice); // Composite service routes this
             }
             else if (SelectedEngine == TtsSettings.WindowsEngine && !string.IsNullOrEmpty(SelectedWindowsVoice))
             {
-                _ttsService.SetWindowsVoice(SelectedWindowsVoice);
+                _ttsService.SetWindowsVoice(SelectedWindowsVoice); // Composite service routes this
             }
             else
             {
                 _logger.LogDebug("No specific voice selected for engine {Engine} or voice is null.", SelectedEngine);
-                // Optionally reset to default? Depends on ITtsService implementation.
+                // Optionally reset to default? The composite service might handle this.
             }
         }
         catch (Exception ex)
@@ -676,34 +693,42 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
 
     /// <summary>
     /// Loads available Windows TTS voices from the TTS service.
-    /// Renamed from LoadVoices.
     /// </summary>
     private async Task LoadWindowsVoicesAsync()
     {
-        if (_isDisposed) return;
-        _logger.LogInformation("Loading Windows TTS voices...");
+        if (_isDisposed)
+            return;
+        _logger.LogInformation("Loading Windows TTS voices via Composite Service...");
         try
         {
+            // Use the composite service method
             IEnumerable<string> installedVoices = await _ttsService.GetInstalledWindowsVoicesAsync();
             await _dispatcherQueue.EnqueueAsync(() =>
             {
-                if (_isDisposed) return;
+                if (_isDisposed)
+                    return;
                 WindowsVoices.Clear();
-                string? currentSelected = SelectedWindowsVoice; // Use Windows voice setting
+                string? currentSelected = SelectedWindowsVoice;
                 if (installedVoices.Any())
                 {
-                    foreach (string voice in installedVoices) WindowsVoices.Add(voice);
+                    foreach (string voice in installedVoices)
+                        WindowsVoices.Add(voice);
+
                     bool selectionStillValid = WindowsVoices.Contains(currentSelected ?? "");
                     _logger.LogDebug("Loaded {Count} Windows TTS voices.", WindowsVoices.Count);
                     if (!selectionStillValid && WindowsVoices.Any())
                     {
-                        SelectedWindowsVoice = WindowsVoices.FirstOrDefault(); // Update Windows setting
+                        // Update the TtsSettings model property directly
+                        TtsSettings.SelectedWindowsVoice = WindowsVoices.FirstOrDefault();
+                        // Notify the UI that the underlying setting changed
+                        OnPropertyChanged(nameof(SelectedWindowsVoice));
                     }
                 }
                 else
                 {
                     _logger.LogWarning("No installed Windows TTS voices found.");
-                    SelectedWindowsVoice = null; // Update Windows setting
+                    TtsSettings.SelectedWindowsVoice = null;
+                    OnPropertyChanged(nameof(SelectedWindowsVoice));
                 }
             });
         }
@@ -712,47 +737,50 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
             _logger.LogError(ex, "Error loading Windows TTS voices.");
             await _dispatcherQueue.EnqueueAsync(() =>
             {
-                if (_isDisposed) return;
+                if (_isDisposed)
+                    return;
                 WindowsVoices.Clear();
-                SelectedWindowsVoice = null;
+                TtsSettings.SelectedWindowsVoice = null;
+                OnPropertyChanged(nameof(SelectedWindowsVoice));
             });
         }
     }
 
     /// <summary>
     /// Loads available Kokoro TTS voices from the TTS service.
-    /// Placeholder implementation.
     /// </summary>
     private async Task LoadKokoroVoicesAsync()
     {
-        if (_isDisposed) return;
-        _logger.LogInformation("Loading Kokoro TTS voices (stub)...");
+        if (_isDisposed)
+            return;
+        _logger.LogInformation("Loading Kokoro TTS voices via Composite Service...");
         try
         {
-            // *** Replace with actual call when ITtsService implements GetInstalledKokoroVoicesAsync ***
-            // IEnumerable<string> installedVoices = await _ttsService.GetInstalledKokoroVoicesAsync();
-            await Task.Delay(10); // Simulate async work
-            IEnumerable<string> installedVoices = []; // Placeholder
-
+            // Use the composite service method
+            IEnumerable<string> installedVoices = await _ttsService.GetInstalledKokoroVoicesAsync();
             await _dispatcherQueue.EnqueueAsync(() =>
             {
-                if (_isDisposed) return;
+                if (_isDisposed)
+                    return;
                 KokoroVoices.Clear();
-                string? currentSelected = SelectedKokoroVoice; // Use Kokoro voice setting
+                string? currentSelected = SelectedKokoroVoice;
                 if (installedVoices.Any())
                 {
-                    foreach (string voice in installedVoices) KokoroVoices.Add(voice);
+                    foreach (string voice in installedVoices)
+                        KokoroVoices.Add(voice);
                     bool selectionStillValid = KokoroVoices.Contains(currentSelected ?? "");
                     _logger.LogDebug("Loaded {Count} Kokoro TTS voices.", KokoroVoices.Count);
                     if (!selectionStillValid && KokoroVoices.Any())
                     {
-                        SelectedKokoroVoice = KokoroVoices.FirstOrDefault(); // Update Kokoro setting
+                        TtsSettings.SelectedKokoroVoice = KokoroVoices.FirstOrDefault();
+                        OnPropertyChanged(nameof(SelectedKokoroVoice));
                     }
                 }
                 else
                 {
                     _logger.LogWarning("No installed Kokoro TTS voices found (or loading not implemented).");
-                    SelectedKokoroVoice = null; // Update Kokoro setting
+                    TtsSettings.SelectedKokoroVoice = null;
+                    OnPropertyChanged(nameof(SelectedKokoroVoice));
                 }
             });
         }
@@ -761,42 +789,49 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
             _logger.LogError(ex, "Error loading Kokoro TTS voices.");
             await _dispatcherQueue.EnqueueAsync(() =>
             {
-                if (_isDisposed) return;
+                if (_isDisposed)
+                    return;
                 KokoroVoices.Clear();
-                SelectedKokoroVoice = null;
+                TtsSettings.SelectedKokoroVoice = null;
+                OnPropertyChanged(nameof(SelectedKokoroVoice));
             });
         }
     }
 
-
     /// <summary>
-    /// Command to test the Text-to-Speech configuration using the currently selected engine and voice.
+    /// Command to test the Text-to-Speech configuration using the currently selected engine, voice,
+    /// and the text provided in the TtsTestPhrase property.
     /// </summary>
     [RelayCommand(CanExecute = nameof(CanTestTts))]
     private async Task TestTtsAsync()
     {
+        // Use MemberNotNullWhen guard for cleaner null checks
+        [MemberNotNullWhen(true, nameof(TtsTestPhrase))]
+        bool HasTestPhrase() => !string.IsNullOrWhiteSpace(TtsTestPhrase);
+
         if (!TtsSettings.Enabled)
         {
             _logger.LogInformation("Test TTS requested but TTS is currently disabled.");
             return;
         }
+        if (!HasTestPhrase())
+        {
+            _logger.LogInformation("Test TTS requested but no test phrase entered.");
+            return;
+        }
 
         string voiceToUse = (SelectedEngine == TtsSettings.KokoroEngine ? SelectedKokoroVoice : SelectedWindowsVoice) ?? "Default";
-
         _logger.LogInformation(
-            "Testing TTS with Engine: {Engine}, Voice: '{SelectedVoice}', Rate: {Rate}, Volume: {Volume}",
+            "Testing TTS with Engine: {Engine}, Voice: '{SelectedVoice}', Rate: {Rate}, Volume: {Volume}, Phrase: '{Phrase}'",
             SelectedEngine,
             voiceToUse,
             TtsSettings.Rate,
-            TtsSettings.Volume
+            TtsSettings.Volume,
+            TtsTestPhrase
         );
 
-        // Settings are applied via property setters now or via ApplyVoiceSetting
-        _ttsService.SetRate(TtsSettings.Rate);
-        _ttsService.SetVolume(TtsSettings.Volume);
-        ApplyVoiceSetting(); // Ensure correct voice is selected in the service
-
-        await _ttsService.SpeakAsync($"This is a test using the {SelectedEngine} engine.");
+        // Speak the custom text from the TtsTestPhrase property
+        await _ttsService.SpeakAsync(TtsTestPhrase);
     }
 
     private bool CanTestTts() => TtsSettings.Enabled;
@@ -818,9 +853,7 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
     private async Task SaveSettingsAsync()
     {
         _logger.LogInformation("Saving settings...");
-
         await _settingsService.SaveSettingsAsync(CurrentSettings);
-
         _messenger.Send(new OverlaySettingsUpdateMessage(CurrentSettings.Overlays));
     }
 
@@ -835,10 +868,8 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
         if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri))
         {
             logger?.LogWarning("Invalid URL format provided to OpenUrlAsync: {Url}", url);
-
             return;
         }
-
         try
         {
             logger?.LogInformation("Opening URL: {Url}", url);
@@ -860,27 +891,25 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
         string urlToCopy = overlayType?.ToLowerInvariant() switch
         {
             "chat" => ChatOverlayUrl,
-
             _ => string.Empty,
         };
-
         if (string.IsNullOrEmpty(urlToCopy))
         {
             _logger.LogWarning("CopyOverlayUrl called with invalid/unsupported type or URL is empty: {OverlayType}", overlayType ?? "null");
-
             return;
         }
-
         try
         {
             DataPackage dataPackage = new() { RequestedOperation = DataPackageOperation.Copy };
             dataPackage.SetText(urlToCopy);
             Clipboard.SetContent(dataPackage);
             _logger.LogInformation("Copied overlay URL to clipboard: {Url}", urlToCopy);
+            // TODO: Show brief confirmation to user (e.g., via TeachingTip or InfoBar)
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to copy URL to clipboard: {Url}", urlToCopy);
+            // TODO: Show error to user
         }
     }
 
@@ -891,7 +920,7 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
     private async Task ConnectTwitchAccountAsync()
     {
         _logger.LogInformation("ConnectTwitchAccount command executed.");
-
+        // TODO: Show busy indicator
         try
         {
             await _unifiedEventService.TriggerTwitchLoginAsync();
@@ -899,41 +928,12 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error initiating Twitch login flow."); /* TODO: Show error */
+            _logger.LogError(ex, "Error initiating Twitch login flow.");
+            // TODO: Show error to user
         }
         finally
-        { /* TODO: Hide busy indicator */
-        }
-    }
-
-    /// <summary>
-    /// Command to log out a specific Twitch account and remove it from settings.
-    /// </summary>
-    /// <param name="accountToLogout">The TwitchAccount to log out.</param>
-    [RelayCommand]
-    private async Task LogoutTwitchAccountAsync(TwitchAccount? accountToLogout)
-    {
-        if (accountToLogout?.UserId == null)
-            return;
-        string userId = accountToLogout.UserId;
-        string username = accountToLogout.Username;
-        _logger.LogInformation("Logging out Twitch account: {Username} ({UserId})", username, userId);
-        try
         {
-            await _unifiedEventService.LogoutTwitchAccountAsync(userId);
-
-            await _dispatcherQueue.EnqueueAsync(() =>
-            {
-                if (CurrentSettings.Connections.TwitchAccounts.Remove(accountToLogout))
-                {
-                    _logger.LogInformation("Removed {Username} from settings collection.", username);
-                    _ = SaveSettingsAsync();
-                }
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error logging out Twitch {Username}", username);
+            // TODO: Hide busy indicator
         }
     }
 
@@ -947,11 +947,15 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
             return;
         string userId = accountToRemove.UserId;
         string username = accountToRemove.Username;
+
         _logger.LogInformation("Removing Twitch account: {Username} ({UserId})", username, userId);
+        // TODO: Show busy indicator
         try
         {
+            // Logout/disconnect and remove tokens first
             await _unifiedEventService.LogoutTwitchAccountAsync(userId);
 
+            // Remove from settings collection on UI thread
             bool removed = false;
             await _dispatcherQueue.EnqueueAsync(() =>
             {
@@ -966,6 +970,7 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
                 }
             });
 
+            // Save settings if removal was successful
             if (removed)
             {
                 await SaveSettingsAsync();
@@ -973,10 +978,13 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error removing Twitch {Username}", username); /* TODO: Show error */
+            _logger.LogError(ex, "Error removing Twitch {Username}", username);
+            // TODO: Show error to user
         }
         finally
         {
+            // TODO: Hide busy indicator
+            // Ensure UI updates regardless of success/failure
             _messenger.Send(new ConnectionsUpdatedMessage());
         }
     }
@@ -988,7 +996,7 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
     private async Task ConnectYouTubeAccountAsync()
     {
         _logger.LogInformation("ConnectYouTubeAccount command executed.");
-
+        // TODO: Show busy indicator
         try
         {
             await _unifiedEventService.TriggerYouTubeLoginAsync();
@@ -996,40 +1004,12 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error initiating YouTube login flow."); /* TODO: Show error */
+            _logger.LogError(ex, "Error initiating YouTube login flow.");
+            // TODO: Show error to user
         }
         finally
-        { /* TODO: Hide busy indicator */
-        }
-    }
-
-    /// <summary>
-    /// Command to log out a specific YouTube account and remove it from settings.
-    /// </summary>
-    /// <param name="accountToLogout">The YouTubeAccount to log out.</param>
-    [RelayCommand]
-    private async Task LogoutYouTubeAccountAsync(YouTubeAccount? accountToLogout)
-    {
-        if (accountToLogout?.ChannelId == null)
-            return;
-        string channelId = accountToLogout.ChannelId;
-        string channelName = accountToLogout.ChannelName;
-        _logger.LogInformation("Logging out YouTube account: {ChannelName} ({ChannelId})", channelName, channelId);
-        try
         {
-            await _unifiedEventService.LogoutYouTubeAccountAsync(channelId);
-            await _dispatcherQueue.EnqueueAsync(() =>
-            {
-                if (CurrentSettings.Connections.YouTubeAccounts.Remove(accountToLogout))
-                {
-                    _logger.LogInformation("Removed {ChannelName} from settings collection.", channelName);
-                    _ = SaveSettingsAsync();
-                }
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error logging out YouTube {ChannelName}", channelName);
+            // TODO: Hide busy indicator
         }
     }
 
@@ -1043,11 +1023,15 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
             return;
         string channelId = accountToRemove.ChannelId;
         string channelName = accountToRemove.ChannelName;
+
         _logger.LogInformation("Removing YouTube account: {ChannelName} ({ChannelId})", channelName, channelId);
+        // TODO: Show busy indicator
         try
         {
+            // Logout/disconnect and remove tokens first
             await _unifiedEventService.LogoutYouTubeAccountAsync(channelId);
 
+            // Remove from settings collection on UI thread
             bool removed = false;
             await _dispatcherQueue.EnqueueAsync(() =>
             {
@@ -1062,6 +1046,7 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
                 }
             });
 
+            // Save settings if removal was successful
             if (removed)
             {
                 await SaveSettingsAsync();
@@ -1069,10 +1054,13 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error removing YouTube {ChannelName}", channelName); /* TODO: Show error */
+            _logger.LogError(ex, "Error removing YouTube {ChannelName}", channelName);
+            // TODO: Show error to user
         }
         finally
         {
+            // TODO: Hide busy indicator
+            // Ensure UI updates regardless of success/failure
             _messenger.Send(new ConnectionsUpdatedMessage());
         }
     }
@@ -1084,7 +1072,9 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
     private async Task ConnectAllAsync()
     {
         _logger.LogInformation("ConnectAll command executed.");
+        // TODO: Show busy indicator
         await _unifiedEventService.ConnectAllConfiguredAsync();
+        // TODO: Hide busy indicator
     }
 
     /// <summary>
@@ -1094,7 +1084,9 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
     private async Task DisconnectAllAsync()
     {
         _logger.LogInformation("DisconnectAll command executed.");
+        // TODO: Show busy indicator
         await _unifiedEventService.DisconnectAllAsync();
+        // TODO: Hide busy indicator
     }
 
     /// <summary>
@@ -1110,7 +1102,18 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
         if (CurrentSettings.Connections.EnableStreamlabs != enable)
         {
             CurrentSettings.Connections.EnableStreamlabs = enable;
-            await SaveSettingsAsync();
+            await SaveSettingsAsync(); // Save the setting change
+
+            // Trigger connect/disconnect based on the new state
+            if (enable)
+            {
+                await _unifiedEventService.ConnectStreamlabsAsync();
+            }
+            else
+            {
+                // Use Disable which also clears token ID etc.
+                await _unifiedEventService.DisableStreamlabsAsync();
+            }
         }
     }
 
@@ -1142,22 +1145,25 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
 
         ContentDialogResult result = await inputDialog.ShowAsync();
         string? tokenInput = tokenInputBox.Text;
+
         bool enableNow = result == ContentDialogResult.Primary;
         bool saveOnly = result == ContentDialogResult.Secondary;
 
         if ((enableNow || saveOnly) && !string.IsNullOrWhiteSpace(tokenInput))
         {
+            // Use a consistent key or generate one if needed
             string streamlabsStorageKey = CurrentSettings.Connections.StreamlabsTokenId ?? $"streamlabs_socket_{Guid.NewGuid()}";
+
             try
             {
                 await _tokenStorage.SaveTokensAsync(streamlabsStorageKey, tokenInput, null);
+
                 bool settingsChanged = false;
                 if (CurrentSettings.Connections.StreamlabsTokenId != streamlabsStorageKey)
                 {
                     CurrentSettings.Connections.StreamlabsTokenId = streamlabsStorageKey;
                     settingsChanged = true;
                 }
-
                 if (enableNow && !CurrentSettings.Connections.EnableStreamlabs)
                 {
                     CurrentSettings.Connections.EnableStreamlabs = true;
@@ -1165,17 +1171,32 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
                 }
 
                 if (settingsChanged)
-                    await SaveSettingsAsync();
-                else if (enableNow && StreamlabsStatus != ConnectionStatus.Connected)
+                {
+                    await SaveSettingsAsync(); // Save settings if token ID or enable state changed
+                }
+
+                // If enabling now, attempt connection
+                if (enableNow)
+                {
                     await _unifiedEventService.ConnectStreamlabsAsync();
-                NotifyAllPropertiesChanged();
+                }
+
+                NotifyAllPropertiesChanged(); // Refresh UI state
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to save Streamlabs token/settings."); /* TODO: Show error */
+                _logger.LogError(ex, "Failed to save Streamlabs token/settings.");
+                // TODO: Show error to user
             }
         }
-        /* ... handle cancel/empty ... */
+        else if (result == ContentDialogResult.None)
+        {
+            _logger.LogInformation("Streamlabs token setup cancelled.");
+        }
+        else
+        {
+            _logger.LogWarning("Streamlabs token setup skipped: No token entered.");
+        }
     }
 
     /// <summary>
@@ -1186,8 +1207,7 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
     {
         _logger.LogInformation("DisableStreamlabs command executed.");
         await _unifiedEventService.DisableStreamlabsAsync();
-
-        NotifyAllPropertiesChanged();
+        NotifyAllPropertiesChanged(); // Refresh UI state
     }
 
     /// <summary>
@@ -1237,9 +1257,10 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
             return;
         }
 
+        // TODO: Add busy indicator management
         try
         {
-            Task? actionTask;
+            Task? actionTask = null;
             if (connect)
             {
                 _logger.LogInformation(
@@ -1265,8 +1286,8 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
                 );
                 actionTask = platform switch
                 {
-                    "Twitch" => _twitchClient.DisconnectAsync(accountId),
-                    "YouTube" => _youTubeClient.DisconnectAsync(accountId),
+                    "Twitch" => _twitchClient.DisconnectAsync(accountId), // Use client directly for disconnect
+                    "YouTube" => _youTubeClient.DisconnectAsync(accountId), // Use client directly for disconnect
                     _ => Task.CompletedTask,
                 };
             }
@@ -1280,10 +1301,13 @@ public partial class SettingsViewModel : ObservableObject, IRecipient<Connection
         {
             _logger.LogError(ex, "Error during toggle connect/disconnect action for {Platform} account {DisplayName}", platform, displayName);
         }
-
-        if (settingsChanged)
+        finally
         {
-            await SaveSettingsAsync();
+            // TODO: Hide busy indicator
+            if (settingsChanged)
+            {
+                await SaveSettingsAsync();
+            }
         }
     }
 

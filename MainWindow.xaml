@@ -9,7 +9,8 @@
     xmlns:viewmodels="using:StreamWeaver.UI.ViewModels"
     xmlns:views="using:StreamWeaver.UI.Views"
     mc:Ignorable="d"
-    Title="StreamWeaver">
+    Title="StreamWeaver"
+    Closed="MainWindow_Closed">
     <Window.SystemBackdrop>
         <MicaBackdrop Kind="Base"/>
     </Window.SystemBackdrop>
