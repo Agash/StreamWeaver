@@ -9,328 +9,190 @@
     xmlns:viewmodels="using:StreamWeaver.UI.ViewModels"
     xmlns:converters="using:StreamWeaver.UI.Converters"
     xmlns:settings="using:StreamWeaver.Core.Models.Settings"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:ui="using:CommunityToolkit.WinUI"
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance Type=viewmodels:SettingsViewModel, IsDesignTimeCreatable=False}"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <Page.Resources>
+        <x:Double x:Key="SettingsCardSpacing">4</x:Double>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter"/>
-        <StaticResource x:Key="DecimalFormatter"
-                        ResourceKey="DecimalFormatter"/>
-        <StaticResource x:Key="IntegerFormatter"
-                        ResourceKey="IntegerFormatter"/>
+        <StaticResource x:Key="DecimalFormatter" ResourceKey="DecimalFormatter"/>
+        <StaticResource x:Key="IntegerFormatter" ResourceKey="IntegerFormatter"/>
         <converters:EqualityToVisibilityConverter x:Key="EngineToVisibilityConverter"/>
+
+        <!-- Helper style for format TextBoxes -->
+        <Style x:Key="FormatTextBoxStyle" TargetType="TextBox">
+            <Setter Property="AcceptsReturn" Value="True"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="MinHeight" Value="60"/>
+            <Setter Property="Margin" Value="0,5,0,0"/>
+        </Style>
+
+        <!-- Style for nested settings StackPanel -->
+        <Style x:Key="NestedSettingsStackPanelStyle" TargetType="StackPanel">
+            <Setter Property="Margin" Value="48,5,0,10"/>
+            <!-- Indent -->
+            <Setter Property="Spacing" Value="10"/>
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefault}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <!-- Bottom border -->
+            <Setter Property="Padding" Value="0,0,0,10"/>
+            <!-- Padding below border -->
+        </Style>
 
     </Page.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto"
-                  Padding="20">
-        <StackPanel Spacing="15">
-            <TextBlock Text="Text-to-Speech (TTS)"
-                       Style="{ThemeResource SubtitleTextBlockStyle}"/>
-            <ToggleSwitch Header="Enable TTS"
-                          IsOn="{Binding TtsSettings.Enabled, Mode=TwoWay}">
-                <ToolTipService.ToolTip>
-                    <ToolTip Content="Globally enable or disable the text-to-speech feature."/>
-                </ToolTipService.ToolTip>
-            </ToggleSwitch>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
+        <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+            <TextBlock Text="Text-to-Speech (TTS)" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="0,0,0,10"/>
 
-            <TextBlock Text="TTS Engine" Style="{StaticResource BaseTextBlockStyle}" Margin="0,10,0,-5"/>
-            <RadioButtons Header="Select the engine to use for speech synthesis:"
-                          ItemsSource="{Binding TtsEngineOptions}"
-                          SelectedItem="{Binding SelectedEngine, Mode=TwoWay}"
-                          IsEnabled="{Binding TtsSettings.Enabled}">
-                <RadioButtons.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding}"/>
-                    </DataTemplate>
-                </RadioButtons.ItemTemplate>
-            </RadioButtons>
+            <!-- General Settings -->
+            <controls:SettingsCard Header="Enable TTS" HeaderIcon="{ui:FontIcon Glyph=}">
+                <ToggleSwitch IsOn="{Binding TtsSettings.Enabled, Mode=TwoWay}"/>
+            </controls:SettingsCard>
 
-            <ComboBox Header="Windows Voice"
-                      ItemsSource="{Binding WindowsVoices}"
-                      SelectedItem="{Binding SelectedWindowsVoice, Mode=TwoWay}"
-                      IsEnabled="{Binding TtsSettings.Enabled}"
-                      PlaceholderText="Default System Voice"
-                      Visibility="{Binding SelectedEngine, Converter={StaticResource EngineToVisibilityConverter}, ConverterParameter='Windows'}">
-                <ToolTipService.ToolTip>
-                    <ToolTip Content="Select the voice used for TTS playback. Uses installed Windows voices."/>
-                </ToolTipService.ToolTip>
-            </ComboBox>
+            <controls:SettingsCard Header="TTS Engine" HeaderIcon="{ui:FontIcon Glyph=}" IsEnabled="{Binding TtsSettings.Enabled}">
+                <RadioButtons ItemsSource="{Binding TtsEngineOptions}" SelectedItem="{Binding SelectedEngine, Mode=TwoWay}">
+                    <RadioButtons.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}"/>
+                        </DataTemplate>
+                    </RadioButtons.ItemTemplate>
+                </RadioButtons>
+            </controls:SettingsCard>
 
-            <ComboBox Header="Kokoro Voice"
-                      ItemsSource="{Binding KokoroVoices}"
-                      SelectedItem="{Binding SelectedKokoroVoice, Mode=TwoWay}"
-                      IsEnabled="{Binding TtsSettings.Enabled}"
-                      PlaceholderText="No Kokoro voices found"
-                      Visibility="{Binding SelectedEngine, Converter={StaticResource EngineToVisibilityConverter}, ConverterParameter='Kokoro'}">
-                <ToolTipService.ToolTip>
-                    <ToolTip Content="Select the voice used for Kokoro TTS playback."/>
-                </ToolTipService.ToolTip>
-            </ComboBox>
+            <controls:SettingsCard Header="Windows Voice" HeaderIcon="{ui:FontIcon Glyph=}"
+                                   IsEnabled="{Binding TtsSettings.Enabled}"
+                                   Visibility="{Binding SelectedEngine, Converter={StaticResource EngineToVisibilityConverter}, ConverterParameter='Windows'}">
+                <ComboBox ItemsSource="{Binding WindowsVoices}"
+                          SelectedItem="{Binding SelectedWindowsVoice, Mode=TwoWay}"
+                          PlaceholderText="Default System Voice" MinWidth="200"/>
+            </controls:SettingsCard>
 
-            <Slider Header="Volume"
-                    Minimum="0"
-                    Maximum="100"
-                    Value="{Binding TtsSettings.Volume, Mode=TwoWay}"
-                    TickFrequency="10"
-                    TickPlacement="Inline"
-                    StepFrequency="1"
-                    IsEnabled="{Binding TtsSettings.Enabled}">
-                <ToolTipService.ToolTip>
-                    <ToolTip Content="Adjust the volume of the TTS voice (0-100)."/>
-                </ToolTipService.ToolTip>
-            </Slider>
-            <Slider Header="Rate"
-                    Minimum="-10"
-                    Maximum="10"
-                    Value="{Binding TtsSettings.Rate, Mode=TwoWay}"
-                    TickFrequency="1"
-                    TickPlacement="Inline"
-                    StepFrequency="1"
-                    IsEnabled="{Binding TtsSettings.Enabled}">
-                <ToolTipService.ToolTip>
-                    <ToolTip Content="Adjust the speaking rate of the TTS voice (-10 to +10)."/>
-                </ToolTipService.ToolTip>
-            </Slider>
+            <controls:SettingsCard Header="Kokoro Voice" HeaderIcon="{ui:FontIcon Glyph=}"
+                                   IsEnabled="{Binding TtsSettings.Enabled}"
+                                   Visibility="{Binding SelectedEngine, Converter={StaticResource EngineToVisibilityConverter}, ConverterParameter='Kokoro'}">
+                <ComboBox ItemsSource="{Binding KokoroVoices}"
+                          SelectedItem="{Binding SelectedKokoroVoice, Mode=TwoWay}"
+                          PlaceholderText="No Kokoro voices found" MinWidth="200"/>
+            </controls:SettingsCard>
 
-            <TextBox Header="Text to Speak for Test"
-                     Text="{Binding TtsTestPhrase, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                     PlaceholderText="Enter text here to test TTS..."
-                     Margin="0,10,0,0"
-                     AcceptsReturn="True"
-                     TextWrapping="Wrap"
-                     Height="80"
-                     IsEnabled="{Binding TtsSettings.Enabled}"/>
-            
-            <Button Content="Test TTS"
-                    Command="{Binding TestTtsCommand}"
-                    IsEnabled="{Binding TtsSettings.Enabled}"
-                    HorizontalAlignment="Left"
-                    Margin="0,10,0,0">
-                <ToolTipService.ToolTip>
-                    <ToolTip Content="Play a sample message using the current settings."/>
-                </ToolTipService.ToolTip>
-            </Button>
-
-            <Expander Header="TTS Event Triggers"
-                      Margin="0,10,0,0"
-                      IsEnabled="{Binding TtsSettings.Enabled}"
-                      IsExpanded="True">
-                <StackPanel Spacing="5"
-                            Margin="24,5,0,0">
-                    <TextBlock Text="Read aloud:"
-                               Margin="0,0,0,5"/>
-                    <CheckBox Content="Twitch Subscriptions / Resubs"
-                              IsChecked="{Binding TtsSettings.ReadTwitchSubs, Mode=TwoWay}">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Read out new subscriptions and resubscriptions from Twitch."/>
-                        </ToolTipService.ToolTip>
-                    </CheckBox>
-                    <CheckBox Content="Twitch Bits / Cheers"
-                              IsChecked="{Binding TtsSettings.ReadTwitchBits, Mode=TwoWay}">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Read out Bit donations (cheers) from Twitch."/>
-                        </ToolTipService.ToolTip>
-                    </CheckBox>
-                    <NumberBox Header="Minimum Bits to Read"
-                               Minimum="0"
-                               Value="{Binding TtsSettings.MinimumBitAmountToRead, Mode=TwoWay}"
-                               IsEnabled="{Binding TtsSettings.ReadTwitchBits}"
-                               NumberFormatter="{StaticResource IntegerFormatter}"
-                               SpinButtonPlacementMode="Inline"
-                               SmallChange="10"
-                               LargeChange="100"
-                               Margin="20,0,0,0">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Only read cheers that meet or exceed this bit amount."/>
-                        </ToolTipService.ToolTip>
-                    </NumberBox>
-                    <CheckBox Content="YouTube Memberships / Milestones"
-                              IsChecked="{Binding TtsSettings.ReadYouTubeMemberships, Mode=TwoWay}">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Read out new YouTube memberships and milestone messages."/>
-                        </ToolTipService.ToolTip>
-                    </CheckBox>
-                    <CheckBox Content="YouTube Super Chats / Stickers"
-                              IsChecked="{Binding TtsSettings.ReadSuperChats, Mode=TwoWay}">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Read out YouTube Super Chats and Super Stickers."/>
-                        </ToolTipService.ToolTip>
-                    </CheckBox>
-                    <NumberBox Header="Minimum Super Chat Amount"
-                               Minimum="0"
-                               Value="{Binding TtsSettings.MinimumSuperChatAmountToRead, Mode=TwoWay}"
-                               IsEnabled="{Binding TtsSettings.ReadSuperChats}"
-                               NumberFormatter="{StaticResource DecimalFormatter}"
-                               SpinButtonPlacementMode="Inline"
-                               SmallChange="0.5"
-                               LargeChange="1"
-                               Margin="20,0,0,0">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Only read Super Chats/Stickers that meet or exceed this monetary value (in your default currency)."/>
-                        </ToolTipService.ToolTip>
-                    </NumberBox>
-                    <CheckBox Content="Streamlabs Donations"
-                              IsChecked="{Binding TtsSettings.ReadStreamlabsDonations, Mode=TwoWay}">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Read out donations received via Streamlabs."/>
-                        </ToolTipService.ToolTip>
-                    </CheckBox>
-                    <NumberBox Header="Minimum Donation Amount"
-                               Minimum="0"
-                               Value="{Binding TtsSettings.MinimumDonationAmountToRead, Mode=TwoWay}"
-                               IsEnabled="{Binding TtsSettings.ReadStreamlabsDonations}"
-                               NumberFormatter="{StaticResource DecimalFormatter}"
-                               SpinButtonPlacementMode="Inline"
-                               SmallChange="0.5"
-                               LargeChange="1"
-                               Margin="20,0,0,0">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Only read Streamlabs donations that meet or exceed this monetary value."/>
-                        </ToolTipService.ToolTip>
-                    </NumberBox>
-                    <CheckBox Content="Follows"
-                              IsChecked="{Binding TtsSettings.ReadFollows, Mode=TwoWay}">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Read out new follower alerts."/>
-                        </ToolTipService.ToolTip>
-                    </CheckBox>
-                    <CheckBox Content="Raids"
-                              IsChecked="{Binding TtsSettings.ReadRaids, Mode=TwoWay}">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Read out incoming raid notifications."/>
-                        </ToolTipService.ToolTip>
-                    </CheckBox>
-                    <NumberBox Header="Minimum Raid Viewers to Read"
-                               Minimum="0"
-                               Value="{Binding TtsSettings.MinimumRaidViewersToRead, Mode=TwoWay}"
-                               IsEnabled="{Binding TtsSettings.ReadRaids}"
-                               NumberFormatter="{StaticResource IntegerFormatter}"
-                               SpinButtonPlacementMode="Inline"
-                               SmallChange="1"
-                               LargeChange="10"
-                               Margin="20,0,0,0">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Only read raids that meet or exceed this viewer count."/>
-                        </ToolTipService.ToolTip>
-                    </NumberBox>
+            <controls:SettingsCard Header="Volume and Rate" HeaderIcon="{ui:FontIcon Glyph=}" IsEnabled="{Binding TtsSettings.Enabled}">
+                <controls:SettingsCard.Resources>
+                    <!-- Define the resource directly inside the card's resources -->
+                    <x:Double x:Key="SettingsCardWrapThreshold">600</x:Double>
+                </controls:SettingsCard.Resources>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Slider Header="Volume" Minimum="0" Maximum="100" Value="{Binding TtsSettings.Volume, Mode=TwoWay}" TickFrequency="10" TickPlacement="Inline" StepFrequency="1" MinWidth="150"/>
+                    <Slider Header="Rate" Minimum="-10" Maximum="10" Value="{Binding TtsSettings.Rate, Mode=TwoWay}" TickFrequency="1" TickPlacement="Inline" StepFrequency="1" MinWidth="150"/>
                 </StackPanel>
-            </Expander>
+            </controls:SettingsCard>
 
-            <Expander Header="TTS Message Formats"
-                      Margin="0,10,0,0"
-                      IsEnabled="{Binding TtsSettings.Enabled}">
-                <StackPanel Margin="24,5,0,0"
-                            Spacing="10">
-                    <TextBlock TextWrapping="Wrap"
-                               FontSize="11"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               Margin="0,0,0,10">
-                          Edit the format strings used for TTS announcements. Available placeholders depend on the event type (common ones: {username}, {amount}, {message}, {months}, {tier}, {recipient}, {viewers}). Invalid placeholders will be ignored.
-                    </TextBlock>
-                    <TextBox Header="Donation Format"
-                             Text="{Binding TtsSettings.DonationMessageFormat, Mode=TwoWay}"
-                             AcceptsReturn="True"
-                             TextWrapping="Wrap"
-                             Height="60">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Format for Streamlabs donations. Placeholders: {username}, {amount}, {message}."/>
-                        </ToolTipService.ToolTip>
-                    </TextBox>
-                    <TextBox Header="Bits Format"
-                             Text="{Binding TtsSettings.BitsMessageFormat, Mode=TwoWay}"
-                             AcceptsReturn="True"
-                             TextWrapping="Wrap"
-                             Height="60">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Format for Twitch Bits/Cheers. Placeholders: {username}, {amount}, {message}."/>
-                        </ToolTipService.ToolTip>
-                    </TextBox>
-                    <TextBox Header="SuperChat Format"
-                             Text="{Binding TtsSettings.SuperChatMessageFormat, Mode=TwoWay}"
-                             AcceptsReturn="True"
-                             TextWrapping="Wrap"
-                             Height="60">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Format for YouTube Super Chats/Stickers. Placeholders: {username}, {amount}, {message}."/>
-                        </ToolTipService.ToolTip>
-                    </TextBox>
-                    <TextBox Header="New Sub Format"
-                             Text="{Binding TtsSettings.NewSubMessageFormat, Mode=TwoWay}"
-                             AcceptsReturn="True"
-                             TextWrapping="Wrap"
-                             Height="60">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Format for new Twitch subscriptions. Placeholders: {username}, {tier}."/>
-                        </ToolTipService.ToolTip>
-                    </TextBox>
-                    <TextBox Header="Resub Format"
-                             Text="{Binding TtsSettings.ResubMessageFormat, Mode=TwoWay}"
-                             AcceptsReturn="True"
-                             TextWrapping="Wrap"
-                             Height="60">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Format for Twitch resubscriptions. Placeholders: {username}, {months}, {tier}, {message}."/>
-                        </ToolTipService.ToolTip>
-                    </TextBox>
-                    <TextBox Header="Gift Sub Format"
-                             Text="{Binding TtsSettings.GiftSubMessageFormat, Mode=TwoWay}"
-                             AcceptsReturn="True"
-                             TextWrapping="Wrap"
-                             Height="60">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Format for single gifted Twitch subscriptions. Placeholders: {username} (gifter), {recipient}, {tier}."/>
-                        </ToolTipService.ToolTip>
-                    </TextBox>
-                    <TextBox Header="Gift Bomb Format"
-                             Text="{Binding TtsSettings.GiftBombMessageFormat, Mode=TwoWay}"
-                             AcceptsReturn="True"
-                             TextWrapping="Wrap"
-                             Height="60">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Format for multiple gifted Twitch subscriptions (gift bomb). Placeholders: {username} (gifter), {amount} (number of gifts), {tier}."/>
-                        </ToolTipService.ToolTip>
-                    </TextBox>
-                    <TextBox Header="New Member Format"
-                             Text="{Binding TtsSettings.NewMemberMessageFormat, Mode=TwoWay}"
-                             AcceptsReturn="True"
-                             TextWrapping="Wrap"
-                             Height="60">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Format for new YouTube memberships. Placeholders: {username}, {tier}."/>
-                        </ToolTipService.ToolTip>
-                    </TextBox>
-                    <TextBox Header="Member Milestone Format"
-                             Text="{Binding TtsSettings.MemberMilestoneFormat, Mode=TwoWay}"
-                             AcceptsReturn="True"
-                             TextWrapping="Wrap"
-                             Height="60">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Format for YouTube membership milestones. Placeholders: {username}, {months}, {tier}, {message}."/>
-                        </ToolTipService.ToolTip>
-                    </TextBox>
-                    <TextBox Header="Follow Format"
-                             Text="{Binding TtsSettings.FollowMessageFormat, Mode=TwoWay}"
-                             AcceptsReturn="True"
-                             TextWrapping="Wrap"
-                             Height="60">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Format for new follower alerts. Placeholders: {username}."/>
-                        </ToolTipService.ToolTip>
-                    </TextBox>
-                    <TextBox Header="Raid Format"
-                             Text="{Binding TtsSettings.RaidMessageFormat, Mode=TwoWay}"
-                             AcceptsReturn="True"
-                             TextWrapping="Wrap"
-                             Height="60">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="Format for incoming raid alerts. Placeholders: {username} (raider), {amount} (viewers)."/>
-                        </ToolTipService.ToolTip>
-                    </TextBox>
+            <controls:SettingsCard Header="Test TTS" HeaderIcon="{ui:FontIcon Glyph=}" IsEnabled="{Binding TtsSettings.Enabled}">
+                <StackPanel Spacing="10">
+                    <TextBox Text="{Binding TtsTestPhrase, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Enter text here to test TTS..." AcceptsReturn="True" TextWrapping="Wrap" MinHeight="80"/>
+                    <Button Content="Test" Command="{Binding TestTtsCommand}" HorizontalAlignment="Left"/>
                 </StackPanel>
-            </Expander>
+            </controls:SettingsCard>
+
+                    <!-- Twitch Events -->
+                    <controls:SettingsExpander Header="Twitch Events" HeaderIcon="{ui:FontIcon Glyph=}" IsEnabled="{Binding TtsSettings.Enabled}">
+                        <controls:SettingsExpander.Items>
+                            <controls:SettingsCard Header="Subscriptions / Resubs / Gifts" HeaderIcon="{ui:FontIcon Glyph=}">
+                                <ToggleSwitch x:Name="TwitchSubsToggle" IsOn="{Binding TtsSettings.ReadTwitchSubs, Mode=TwoWay}"/>
+                            </controls:SettingsCard>
+                            <StackPanel Style="{StaticResource NestedSettingsStackPanelStyle}" Opacity="{Binding IsOn, ElementName=TwitchSubsToggle, Converter={StaticResource BoolToOpacityConverter}}">
+                                <TextBox Header="New Sub Format" IsEnabled="{Binding IsOn, ElementName=TwitchSubsToggle}" Text="{Binding TtsSettings.NewSubMessageFormat, Mode=TwoWay}" Style="{StaticResource FormatTextBoxStyle}"/>
+                                <TextBox Header="Resub Format" IsEnabled="{Binding IsOn, ElementName=TwitchSubsToggle}" Text="{Binding TtsSettings.ResubMessageFormat, Mode=TwoWay}" Style="{StaticResource FormatTextBoxStyle}"/>
+                                <TextBox Header="Gift Sub Format" IsEnabled="{Binding IsOn, ElementName=TwitchSubsToggle}" Text="{Binding TtsSettings.GiftSubMessageFormat, Mode=TwoWay}" Style="{StaticResource FormatTextBoxStyle}"/>
+                                <TextBox Header="Gift Bomb Format" IsEnabled="{Binding IsOn, ElementName=TwitchSubsToggle}" Text="{Binding TtsSettings.GiftBombMessageFormat, Mode=TwoWay}" Style="{StaticResource FormatTextBoxStyle}"/>
+                            </StackPanel>
+
+                            <controls:SettingsCard Header="Bits / Cheers" HeaderIcon="{ui:FontIcon Glyph=}">
+                                <ToggleSwitch x:Name="TwitchBitsToggle" IsOn="{Binding TtsSettings.ReadTwitchBits, Mode=TwoWay}"/>
+                            </controls:SettingsCard>
+                            <StackPanel Style="{StaticResource NestedSettingsStackPanelStyle}" Opacity="{Binding IsOn, ElementName=TwitchBitsToggle, Converter={StaticResource BoolToOpacityConverter}}">
+                                <NumberBox Header="Minimum Bits to Read" Minimum="0" Value="{Binding TtsSettings.MinimumBitAmountToRead, Mode=TwoWay}" IsEnabled="{Binding IsOn, ElementName=TwitchBitsToggle}" NumberFormatter="{StaticResource IntegerFormatter}" SpinButtonPlacementMode="Inline" SmallChange="10" LargeChange="100"/>
+                                <TextBox Header="Bits Format" Text="{Binding TtsSettings.BitsMessageFormat, Mode=TwoWay}" IsEnabled="{Binding IsOn, ElementName=TwitchBitsToggle}" Style="{StaticResource FormatTextBoxStyle}"/>
+                            </StackPanel>
+
+                            <controls:SettingsCard Header="Raids" HeaderIcon="{ui:FontIcon Glyph=}">
+                                <ToggleSwitch x:Name="TwitchRaidsToggle" IsOn="{Binding TtsSettings.ReadRaids, Mode=TwoWay}"/>
+                            </controls:SettingsCard>
+                            <StackPanel Style="{StaticResource NestedSettingsStackPanelStyle}" Opacity="{Binding IsOn, ElementName=TwitchRaidsToggle, Converter={StaticResource BoolToOpacityConverter}}">
+                                <NumberBox Header="Minimum Raid Viewers to Read" Minimum="0" Value="{Binding TtsSettings.MinimumRaidViewersToRead, Mode=TwoWay}" IsEnabled="{Binding IsOn, ElementName=TwitchRaidsToggle}" NumberFormatter="{StaticResource IntegerFormatter}" SpinButtonPlacementMode="Inline" SmallChange="1" LargeChange="10"/>
+                                <TextBox Header="Raid Format" Text="{Binding TtsSettings.RaidMessageFormat, Mode=TwoWay}" IsEnabled="{Binding IsOn, ElementName=TwitchRaidsToggle}" Style="{StaticResource FormatTextBoxStyle}"/>
+                            </StackPanel>
+                        </controls:SettingsExpander.Items>
+                    </controls:SettingsExpander>
+
+                    <!-- YouTube Events -->
+                    <controls:SettingsExpander Header="YouTube Events" HeaderIcon="{ui:FontIcon Glyph=}" IsEnabled="{Binding TtsSettings.Enabled}">
+                        <controls:SettingsExpander.Items>
+                            <controls:SettingsCard Header="New Members" HeaderIcon="{ui:FontIcon Glyph=}">
+                                <ToggleSwitch x:Name="YouTubeNewMembersToggle" IsOn="{Binding TtsSettings.ReadYouTubeNewMembers, Mode=TwoWay}"/>
+                            </controls:SettingsCard>
+                            <StackPanel Style="{StaticResource NestedSettingsStackPanelStyle}" Opacity="{Binding IsOn, ElementName=YouTubeNewMembersToggle, Converter={StaticResource BoolToOpacityConverter}}">
+                                <TextBox Header="New Member Format" IsEnabled="{Binding IsOn, ElementName=YouTubeNewMembersToggle}" Text="{Binding TtsSettings.NewMemberMessageFormat, Mode=TwoWay}" Style="{StaticResource FormatTextBoxStyle}"/>
+                            </StackPanel>
+
+                            <controls:SettingsCard Header="Member Milestones" HeaderIcon="{ui:FontIcon Glyph=}">
+                                <ToggleSwitch x:Name="YouTubeMilestonesToggle" IsOn="{Binding TtsSettings.ReadYouTubeMilestones, Mode=TwoWay}"/>
+                            </controls:SettingsCard>
+                            <StackPanel Style="{StaticResource NestedSettingsStackPanelStyle}" Opacity="{Binding IsOn, ElementName=YouTubeMilestonesToggle, Converter={StaticResource BoolToOpacityConverter}}">
+                                <NumberBox Header="Minimum Milestone Months to Read" Minimum="1" Value="{Binding TtsSettings.MinimumMilestoneMonthsToRead, Mode=TwoWay}" IsEnabled="{Binding IsOn, ElementName=YouTubeMilestonesToggle}" NumberFormatter="{StaticResource IntegerFormatter}" SpinButtonPlacementMode="Inline" SmallChange="1" LargeChange="6"/>
+                                <TextBox Header="Member Milestone Format" IsEnabled="{Binding IsOn, ElementName=YouTubeMilestonesToggle}" Text="{Binding TtsSettings.MemberMilestoneFormat, Mode=TwoWay}" Style="{StaticResource FormatTextBoxStyle}"/>
+                            </StackPanel>
+
+                            <controls:SettingsCard Header="Membership Gift Purchases (Gifter)" HeaderIcon="{ui:FontIcon Glyph=}">
+                                <controls:SettingsCard.Description>Announce when a user purchases gift memberships for others.</controls:SettingsCard.Description>
+                                <ToggleSwitch x:Name="YouTubeGiftPurchasesToggle" IsOn="{Binding TtsSettings.ReadYouTubeGiftPurchases, Mode=TwoWay}"/>
+                            </controls:SettingsCard>
+                            <StackPanel Style="{StaticResource NestedSettingsStackPanelStyle}" Opacity="{Binding IsOn, ElementName=YouTubeGiftPurchasesToggle, Converter={StaticResource BoolToOpacityConverter}}">
+                                <NumberBox Header="Minimum Gifted Memberships to Read" Minimum="1" Value="{Binding TtsSettings.MinimumGiftCountToRead, Mode=TwoWay}" IsEnabled="{Binding IsOn, ElementName=YouTubeGiftPurchasesToggle}" NumberFormatter="{StaticResource IntegerFormatter}" SpinButtonPlacementMode="Inline" SmallChange="1" LargeChange="5"/>
+                                <TextBox Header="Gift Purchase Format" IsEnabled="{Binding IsOn, ElementName=YouTubeGiftPurchasesToggle}" Text="{Binding TtsSettings.GiftedMemberPurchaseFormat, Mode=TwoWay}" Style="{StaticResource FormatTextBoxStyle}"/>
+                            </StackPanel>
+
+                            <controls:SettingsCard Header="Membership Gift Redemptions (Recipient)" HeaderIcon="{ui:FontIcon Glyph=}">
+                                <controls:SettingsCard.Description>Announce when a user receives a gifted membership.</controls:SettingsCard.Description>
+                                <ToggleSwitch x:Name="YouTubeGiftRedemptionsToggle" IsOn="{Binding TtsSettings.ReadYouTubeGiftRedemptions, Mode=TwoWay}"/>
+                            </controls:SettingsCard>
+                            <StackPanel Style="{StaticResource NestedSettingsStackPanelStyle}" Opacity="{Binding IsOn, ElementName=YouTubeGiftRedemptionsToggle, Converter={StaticResource BoolToOpacityConverter}}">
+                                <TextBox Header="Gift Redemption Format" IsEnabled="{Binding IsOn, ElementName=YouTubeGiftRedemptionsToggle}" Text="{Binding TtsSettings.GiftedMemberRedemptionFormat, Mode=TwoWay}" Style="{StaticResource FormatTextBoxStyle}"/>
+                            </StackPanel>
+
+                            <controls:SettingsCard Header="Super Chats / Stickers" HeaderIcon="{ui:FontIcon Glyph=}">
+                                <ToggleSwitch x:Name="YouTubeSuperChatsToggle" IsOn="{Binding TtsSettings.ReadSuperChats, Mode=TwoWay}"/>
+                            </controls:SettingsCard>
+                            <StackPanel Style="{StaticResource NestedSettingsStackPanelStyle}" Opacity="{Binding IsOn, ElementName=YouTubeSuperChatsToggle, Converter={StaticResource BoolToOpacityConverter}}">
+                                <NumberBox Header="Minimum Super Chat Amount" Minimum="0" Value="{Binding TtsSettings.MinimumSuperChatAmountToRead, Mode=TwoWay}" IsEnabled="{Binding IsOn, ElementName=YouTubeSuperChatsToggle}" NumberFormatter="{StaticResource DecimalFormatter}" SpinButtonPlacementMode="Inline" SmallChange="0.5" LargeChange="1"/>
+                                <TextBox Header="SuperChat Format" IsEnabled="{Binding IsOn, ElementName=YouTubeSuperChatsToggle}" Text="{Binding TtsSettings.SuperChatMessageFormat, Mode=TwoWay}" Style="{StaticResource FormatTextBoxStyle}"/>
+                            </StackPanel>
+                        </controls:SettingsExpander.Items>
+                    </controls:SettingsExpander>
+
+                    <!-- Other Events -->
+                    <controls:SettingsExpander Header="Other Events" HeaderIcon="{ui:FontIcon Glyph=}" IsEnabled="{Binding TtsSettings.Enabled}">
+                        <controls:SettingsExpander.Items>
+                            <controls:SettingsCard Header="Streamlabs Donations" HeaderIcon="{ui:FontIcon Glyph=}">
+                                <ToggleSwitch x:Name="StreamlabsDonationsToggle" IsOn="{Binding TtsSettings.ReadStreamlabsDonations, Mode=TwoWay}"/>
+                            </controls:SettingsCard>
+                            <StackPanel Style="{StaticResource NestedSettingsStackPanelStyle}" Opacity="{Binding IsOn, ElementName=StreamlabsDonationsToggle, Converter={StaticResource BoolToOpacityConverter}}">
+                                <NumberBox Header="Minimum Donation Amount" Minimum="0" Value="{Binding TtsSettings.MinimumDonationAmountToRead, Mode=TwoWay}" IsEnabled="{Binding IsOn, ElementName=StreamlabsDonationsToggle}" NumberFormatter="{StaticResource DecimalFormatter}" SpinButtonPlacementMode="Inline" SmallChange="0.5" LargeChange="1"/>
+                                <TextBox Header="Donation Format" IsEnabled="{Binding IsOn, ElementName=StreamlabsDonationsToggle}" Text="{Binding TtsSettings.DonationMessageFormat, Mode=TwoWay}" Style="{StaticResource FormatTextBoxStyle}"/>
+                            </StackPanel>
+
+                            <controls:SettingsCard Header="Follows" HeaderIcon="{ui:FontIcon Glyph=}">
+                                <ToggleSwitch x:Name="FollowsToggle" IsOn="{Binding TtsSettings.ReadFollows, Mode=TwoWay}"/>
+                            </controls:SettingsCard>
+                            <StackPanel Style="{StaticResource NestedSettingsStackPanelStyle}" Opacity="{Binding IsOn, ElementName=FollowsToggle, Converter={StaticResource BoolToOpacityConverter}}">
+                                <TextBox Header="Follow Format" IsEnabled="{Binding IsOn, ElementName=FollowsToggle}" Text="{Binding TtsSettings.FollowMessageFormat, Mode=TwoWay}" Style="{StaticResource FormatTextBoxStyle}"/>
+                            </StackPanel>
+                        </controls:SettingsExpander.Items>
+                    </controls:SettingsExpander>
         </StackPanel>
     </ScrollViewer>
 </Page>

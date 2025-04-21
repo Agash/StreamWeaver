@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using System;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -60,6 +61,10 @@ public partial class App : Application
         // Delay slightly to allow the main window to initialize visually
         _ = CheckForUpdatesInBackgroundAsync(TimeSpan.FromSeconds(5));
 #endif
+
+        // Eagerly resolve ITtsService to trigger initialization in the background.
+        _ = Services.GetService<ITtsService>();
+        s_logger?.LogInformation("Eagerly resolved ITtsService to initiate background initialization.");
     }
 
     public static T GetService<T>()

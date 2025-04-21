@@ -11,17 +11,10 @@ namespace StreamWeaver.Core.Services.Tts;
 /// Service responsible for formatting BaseEvent data into speakable strings
 /// based on user-defined templates and normalizing the text for TTS engines.
 /// </summary>
-public partial class TtsFormattingService
+public partial class TtsFormattingService(ILogger<TtsFormattingService> logger, ITextNormalizer textNormalizer)
 {
-    private readonly ILogger<TtsFormattingService> _logger;
-    private readonly ITextNormalizer _textNormalizer;
-
-    public TtsFormattingService(ILogger<TtsFormattingService> logger, ITextNormalizer textNormalizer)
-    {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _textNormalizer = textNormalizer ?? throw new ArgumentNullException(nameof(textNormalizer));
-        _logger.LogInformation("TtsFormattingService Initialized.");
-    }
+    private readonly ILogger<TtsFormattingService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly ITextNormalizer _textNormalizer = textNormalizer ?? throw new ArgumentNullException(nameof(textNormalizer));
 
     /// <summary>
     /// Formats an event into a speakable string based on settings, then normalizes it.
@@ -35,6 +28,7 @@ public partial class TtsFormattingService
         ArgumentNullException.ThrowIfNull(settings);
 
         string? format = GetFormatString(eventData, settings);
+
         if (format is null)
         {
             _logger.LogTrace("No format configured or event filtered out for type {EventType}, formatting skipped.", eventData.GetType().Name);
@@ -51,8 +45,11 @@ public partial class TtsFormattingService
 
         // Normalize the formatted message using the injected normalizer
         string normalizedMessage = _textNormalizer.Normalize(rawFormattedMessage);
-
-        _logger.LogDebug("Formatted TTS message: \"{FormattedMessage}\", Normalized: \"{NormalizedMessage}\"", rawFormattedMessage, normalizedMessage);
+        _logger.LogDebug(
+            "Formatted TTS message: \"{FormattedMessage}\", Normalized: \"{NormalizedMessage}\"",
+            rawFormattedMessage,
+            normalizedMessage
+        );
         return normalizedMessage;
     }
 
@@ -77,10 +74,17 @@ public partial class TtsFormattingService
                 (false, _, false) => settings.NewSubMessageFormat, // New sub (not a gift, 0 or fewer months)
             },
 
-            // Handle YouTube Memberships
-            MembershipEvent me when settings.ReadYouTubeMemberships => me.MilestoneMonths > 0
-                ? settings.MemberMilestoneFormat // Milestone
-                : settings.NewMemberMessageFormat, // New Member
+            // Handle YouTube Memberships based on type and thresholds
+            MembershipEvent me => me.MembershipType switch
+            {
+                MembershipEventType.New when settings.ReadYouTubeNewMembers => settings.NewMemberMessageFormat,
+                MembershipEventType.Milestone when settings.ReadYouTubeMilestones && me.MilestoneMonths >= settings.MinimumMilestoneMonthsToRead =>
+                    settings.MemberMilestoneFormat,
+                MembershipEventType.GiftPurchase when settings.ReadYouTubeGiftPurchases && me.GiftCount >= settings.MinimumGiftCountToRead =>
+                    settings.GiftedMemberPurchaseFormat,
+                MembershipEventType.GiftRedemption when settings.ReadYouTubeGiftRedemptions => settings.GiftedMemberRedemptionFormat,
+                _ => null, // Unknown or filtered out membership type
+            },
 
             // Handle Follows
             FollowEvent _ when settings.ReadFollows => settings.FollowMessageFormat,
@@ -104,7 +108,8 @@ public partial class TtsFormattingService
             _ => false, // Unknown donation type should not be read
         };
 
-    // ## REFACTORED FormatMessage using Pattern Matching ##
+    // FormatMessage remains largely the same as it already handles the placeholders correctly
+    // based on the event data passed to it. The filtering logic is now handled by GetFormatString.
     private string FormatMessage(string format, BaseEvent eventData)
     {
         // Pre-validate format string
@@ -137,41 +142,35 @@ public partial class TtsFormattingService
                         // Use a switch expression on a tuple of (eventData, placeholderName.ToLowerInvariant())
                         string? valueString = (eventData, placeholder.ToLowerInvariant()) switch
                         {
-                            // 'username' placeholder (most common)
+                            // --- Generic Placeholders ---
                             (DonationEvent { Username: var uname }, "username") => uname,
                             (SubscriptionEvent { Username: var uname }, "username") => uname, // Gifter if gift, Subber if not
-                            (MembershipEvent { Username: var uname }, "username") => uname, // Member or Gifter
+                            (MembershipEvent { Username: var uname }, "username") => uname, // Member or Recipient (for GiftRedemption), Gifter (for GiftPurchase)
                             (FollowEvent { Username: var uname }, "username") => uname,
                             (RaidEvent { RaiderUsername: var rname }, "username") => rname,
 
-                            // 'amount' placeholder
-                            (DonationEvent de, "amount") => $"{de.Amount}|{de.Currency}", // Pass amount AND currency to normalizer
-                            // Corrected: Use 'when' clause for GiftCount condition
-                            (SubscriptionEvent { IsGift: true, GiftCount: var count } se, "amount") when count > 1 => $"{count:N0}", // For Gift Bomb {amount} is count
-                            (RaidEvent re, "amount") => $"{re.ViewerCount:N0}", // For Raid {amount} is viewers
+                            (DonationEvent de, "amount") => $"{de.Amount} {de.Currency}", // Pass amount AND currency to normalizer
+                            (SubscriptionEvent { IsGift: true, GiftCount: var count } se, "amount") when count > 1 => $"{count:N0}", // Gift Bomb Count
+                            (MembershipEvent { MembershipType: MembershipEventType.GiftPurchase, GiftCount: { } giftCount } me, "amount") =>
+                                $"{giftCount:N0}", // YouTube Gift Purchase Count
+                            (RaidEvent re, "amount") => $"{re.ViewerCount:N0}", // Raid Viewers
 
-                            // 'message' placeholder
                             (DonationEvent { RawMessage: var msg }, "message") => msg,
-                            (SubscriptionEvent { Message: var msg }, "message") => msg, // User message with sub/resub
-                            (MembershipEvent me, "message") => string.Join(" ", me.ParsedMessage.OfType<TextSegment>().Select(ts => ts.Text)), // User comment with milestone
+                            (SubscriptionEvent { IsGift: false, Message: var msg }, "message") => msg, // User message only for Resubs
+                            (MembershipEvent { MembershipType: MembershipEventType.Milestone, ParsedMessage: var segments }, "message") =>
+                                string.Join(" ", segments.OfType<TextSegment>().Select(ts => ts.Text)), // User comment only for Milestones
 
-                            // 'recipient' placeholder (Gift Subs)
+                            // --- Twitch Specific Placeholders ---
                             (SubscriptionEvent { IsGift: true, RecipientUsername: var rcp }, "recipient") => rcp,
+                            (SubscriptionEvent { IsGift: false, CumulativeMonths: var m } se, "months") when m > 0 => m.ToString(),
+                            (SubscriptionEvent { Tier: var t }, "tier") => t,
 
-                            // 'gifter' placeholder (Gift Subs) - Redundant with {username} for gift subs, keep for clarity maybe?
-                            // (SubscriptionEvent { IsGift: true, Username: var gname }, "gifter") => gname,
-
-                            // 'months' placeholder
-                            // Corrected: Use 'when' clause for CumulativeMonths condition
-                            (SubscriptionEvent { IsGift: false, CumulativeMonths: var m } se, "months") when m > 0 => m.ToString(), // Only for Resubs
-                            (MembershipEvent { MilestoneMonths: { } mm }, "months") => mm.ToString(), // For Member Milestones ({ } checks not null)
-
-                            // 'tier' placeholder
-                            (SubscriptionEvent { Tier: var t }, "tier") => t, // Twitch Tier
-                            (MembershipEvent { LevelName: var lvl }, "tier") => lvl, // YouTube Level Name
+                            // --- YouTube Specific Placeholders ---
+                            (MembershipEvent { MembershipType: MembershipEventType.Milestone, MilestoneMonths: { } mm }, "months") => mm.ToString(),
+                            (MembershipEvent { LevelName: var lvl }, "tier") => lvl,
+                            (MembershipEvent { MembershipType: MembershipEventType.GiftPurchase, GifterUsername: var gname }, "gifter") => gname,
 
                             // --- Default Case ---
-                            // Placeholder not explicitly handled for this event type or unknown placeholder
                             var (evt, ph) => LogUnhandledPlaceholderAndReturnEmpty(evt, ph),
                         };
 
@@ -199,7 +198,6 @@ public partial class TtsFormattingService
             );
             // Return empty string or a generic error message on failure
             return string.Empty;
-            // Alternative: return "Error formatting message.";
         }
     }
 

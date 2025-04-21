@@ -63,8 +63,11 @@
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 		<PackageReference Include="Agash.TTSTextNormalization" Version="0.2.1" />
-		<PackageReference Include="Agash.YTLiveChat" Version="2.0.1" />
 
+    <!--
+		<PackageReference Include="Agash.YTLiveChat" Version="2.0.1" />
+    -->
+    
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 
 		<PackageReference Include="CommunityToolkit.WinUI.Animations" Version="8.2.250402" />
@@ -98,6 +101,9 @@
 	</ItemGroup>
 	<ItemGroup>
 	  <Folder Include="UI\Templates\" />
+	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\YTLiveChat\YTLiveChat.csproj" />
 	</ItemGroup>
 	<ItemGroup>
 	  <Page Update="UI\Views\SettingsPages\CredentialsSettingsPage.xaml">
