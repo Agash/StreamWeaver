@@ -77,14 +77,6 @@ public partial class App : Application
     {
         ServiceCollection services = [];
 
-        // YTLiveChat needs IConfiguration to read its options, even if none are set.
-        // We'll provide a minimal in-memory configuration source.
-        IConfigurationRoot configuration = new ConfigurationBuilder()
-        // .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true) // If using JSON file later on
-        .Build();
-
-        services.AddSingleton<IConfiguration>(configuration);
-
         services.AddSingleton(
             DispatcherQueue.GetForCurrentThread()
                 ?? throw new InvalidOperationException("Cannot get DispatcherQueue on non-UI thread during service configuration.")
@@ -105,6 +97,8 @@ public partial class App : Application
             builder.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
             builder.AddFilter("System.Net.Http.HttpClient.YouTubeClient.ClientHandler", LogLevel.Warning);
             builder.AddFilter("System.Net.Http.HttpClient.YouTubeClient.LogicalHandler", LogLevel.Warning);
+            builder.AddFilter("System.Net.Http.HttpClient.YTHttpClient.ClientHandler", LogLevel.Warning);
+            builder.AddFilter("System.Net.Http.HttpClient.YTHttpClient.LogicalHandler", LogLevel.Warning);
         });
 
         services.AddSingleton<LogViewerService>();
@@ -153,8 +147,12 @@ public partial class App : Application
         services.AddSingleton<IStreamlabsClient, StreamlabsService>();
 
         // YTLiveChat Services
-        configuration.GetSection("YTLiveChat").Bind(new YTLiveChatOptions { DebugLogReceivedJsonItems = true });
-        services.AddYTLiveChat(configuration);
+        services.Configure<YTLiveChatOptions>(options =>
+        {
+            options.RequestFrequency = 1000; // 1 second
+            options.DebugLogReceivedJsonItems = true;
+        });
+        services.AddYTLiveChat();
 
         // TTS Services
         services.AddSingleton<TtsFormattingService>(); // Register the formatting service

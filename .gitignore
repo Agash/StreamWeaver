@@ -367,3 +367,4 @@ megalinter-reports/
 .devskim.json
 .gitleaks.toml
 .grype.yaml
+repomix-output.xml

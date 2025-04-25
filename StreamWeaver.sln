@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StreamWeaver", "StreamWeave
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StreamWeaver.Plugin.HelloWorld", "..\StreamWeaver.Plugin.HelloWorld\StreamWeaver.Plugin.HelloWorld.csproj", "{E24D71AD-E710-4569-9271-EE3E975898E0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YTLiveChat", "..\YTLiveChat\YTLiveChat.csproj", "{93A9B617-D6B2-D9FD-196E-7EF5325DF998}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YTLiveChat", "..\YTLiveChat\YTLiveChat\YTLiveChat.csproj", "{CD7CAA56-058B-2867-2160-2EFE782E157F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -49,18 +49,18 @@ Global
 		{E24D71AD-E710-4569-9271-EE3E975898E0}.Release|x64.Build.0 = Release|Any CPU
 		{E24D71AD-E710-4569-9271-EE3E975898E0}.Release|x86.ActiveCfg = Release|Any CPU
 		{E24D71AD-E710-4569-9271-EE3E975898E0}.Release|x86.Build.0 = Release|Any CPU
-		{93A9B617-D6B2-D9FD-196E-7EF5325DF998}.Debug|ARM64.ActiveCfg = Debug|Any CPU
-		{93A9B617-D6B2-D9FD-196E-7EF5325DF998}.Debug|ARM64.Build.0 = Debug|Any CPU
-		{93A9B617-D6B2-D9FD-196E-7EF5325DF998}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{93A9B617-D6B2-D9FD-196E-7EF5325DF998}.Debug|x64.Build.0 = Debug|Any CPU
-		{93A9B617-D6B2-D9FD-196E-7EF5325DF998}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{93A9B617-D6B2-D9FD-196E-7EF5325DF998}.Debug|x86.Build.0 = Debug|Any CPU
-		{93A9B617-D6B2-D9FD-196E-7EF5325DF998}.Release|ARM64.ActiveCfg = Release|Any CPU
-		{93A9B617-D6B2-D9FD-196E-7EF5325DF998}.Release|ARM64.Build.0 = Release|Any CPU
-		{93A9B617-D6B2-D9FD-196E-7EF5325DF998}.Release|x64.ActiveCfg = Release|Any CPU
-		{93A9B617-D6B2-D9FD-196E-7EF5325DF998}.Release|x64.Build.0 = Release|Any CPU
-		{93A9B617-D6B2-D9FD-196E-7EF5325DF998}.Release|x86.ActiveCfg = Release|Any CPU
-		{93A9B617-D6B2-D9FD-196E-7EF5325DF998}.Release|x86.Build.0 = Release|Any CPU
+		{CD7CAA56-058B-2867-2160-2EFE782E157F}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{CD7CAA56-058B-2867-2160-2EFE782E157F}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{CD7CAA56-058B-2867-2160-2EFE782E157F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{CD7CAA56-058B-2867-2160-2EFE782E157F}.Debug|x64.Build.0 = Debug|Any CPU
+		{CD7CAA56-058B-2867-2160-2EFE782E157F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{CD7CAA56-058B-2867-2160-2EFE782E157F}.Debug|x86.Build.0 = Debug|Any CPU
+		{CD7CAA56-058B-2867-2160-2EFE782E157F}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{CD7CAA56-058B-2867-2160-2EFE782E157F}.Release|ARM64.Build.0 = Release|Any CPU
+		{CD7CAA56-058B-2867-2160-2EFE782E157F}.Release|x64.ActiveCfg = Release|Any CPU
+		{CD7CAA56-058B-2867-2160-2EFE782E157F}.Release|x64.Build.0 = Release|Any CPU
+		{CD7CAA56-058B-2867-2160-2EFE782E157F}.Release|x86.ActiveCfg = Release|Any CPU
+		{CD7CAA56-058B-2867-2160-2EFE782E157F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

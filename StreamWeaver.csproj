@@ -102,9 +102,21 @@
 	<ItemGroup>
 	  <Folder Include="UI\Templates\" />
 	</ItemGroup>
-	<ItemGroup>
-	  <ProjectReference Include="..\YTLiveChat\YTLiveChat.csproj" />
-	</ItemGroup>
+  
+  <!-- Define the switch (optional: set default to true for local dev) -->
+  <PropertyGroup>
+    <UseLocalYTLiveChat Condition="'$(UseLocalYTLiveChat)' == ''">true</UseLocalYTLiveChat>
+  </PropertyGroup>
+
+  <!-- Conditional inclusion of ProjectReference or PackageReference -->
+  <ItemGroup Condition="'$(UseLocalYTLiveChat)' == 'true'">
+    <ProjectReference Include="..\YTLiveChat\YTLiveChat\YTLiveChat.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseLocalYTLiveChat)' != 'true'">
+    <PackageReference Include="Agash.YTLiveChat" Version="*" />
+  </ItemGroup>
+  
 	<ItemGroup>
 	  <Page Update="UI\Views\SettingsPages\CredentialsSettingsPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
