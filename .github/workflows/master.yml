@@ -1,32 +1,52 @@
 name: Build and Deploy
 
 permissions:
-    contents: write
+  contents: write
 
 on:
-    push:
-        branches:
-            - master
+  push:
+    branches:
+      - master
 
 jobs:
-    deploy-to-github-release:
-        runs-on: windows-latest
-        steps:
-            - name: Checkout Repo
-              uses: actions/checkout@v4
-            - name: Get Version from Project File
-              id: get-version
-              shell: bash
-              run: echo "version=$(grep -oE '<Version>[^<]+' StreamWeaver.csproj | sed 's/<Version>//')" >> $GITHUB_OUTPUT
-            - name: Install .NET
-              uses: actions/setup-dotnet@v4
-              with:
-                dotnet-version: 9.0.x
-            - name: Publish Applications
-              run: dotnet publish .\StreamWeaver.csproj -c Release -f net9.0-windows10.0.19041.0 -r win-x64 --self-contained -o "bin\win-x64\publish\" -p:PublishSingleFile=false -p:PublishReadyToRun=false -p:PublishTrimmed=false -p:UseLocalYTLiveChat=false
-            - name: Create Release
-              run: |
-                dotnet tool install -g vpk
-                vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }}
-                vpk pack -u StreamWeaver -v ${{ steps.get-version.outputs.version }} -p .\bin\win-x64\publish\ -e StreamWeaver.exe
-                vpk upload github --repoUrl https://github.com/${{ github.repository }} --publish --releaseName "StreamWeaver ${{ steps.get-version.outputs.version }}" --tag v${{ steps.get-version.outputs.version }} --token ${{ secrets.GITHUB_TOKEN }}
+  deploy-to-github-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Get Version from Project File
+        id: get-version
+        shell: bash
+        run: echo "version=$(grep -oE '<Version>[^<]+' StreamWeaver.csproj | sed 's/<Version>//')" >> $GITHUB_OUTPUT
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: Web/Overlay/package-lock.json
+
+      - name: Cache Node Modules
+        uses: actions/cache@v4
+        with:
+          path: Web/Overlay/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('Web/Overlay/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Publish Applications
+        run: dotnet publish .\StreamWeaver.csproj -c Release -f net9.0-windows10.0.19041.0 -r win-x64 --self-contained -o "bin\win-x64\publish\" -p:PublishSingleFile=false -p:PublishReadyToRun=false -p:PublishTrimmed=false -p:UseLocalYTLiveChat=false -p:UseLocalTTSTextNormalization=false
+
+      - name: Create Release
+        run: |
+          dotnet tool install -g vpk
+          vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }}
+          vpk pack -u StreamWeaver -v ${{ steps.get-version.outputs.version }} -p .\bin\win-x64\publish\ -e StreamWeaver.exe
+          vpk upload github --repoUrl https://github.com/${{ github.repository }} --publish --releaseName "StreamWeaver ${{ steps.get-version.outputs.version }}" --tag v${{ steps.get-version.outputs.version }} --token ${{ secrets.GITHUB_TOKEN }}

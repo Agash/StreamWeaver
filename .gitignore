@@ -368,3 +368,4 @@ megalinter-reports/
 .gitleaks.toml
 .grype.yaml
 repomix-output.xml
+Web/Overlay/react-overlay-updated.xml

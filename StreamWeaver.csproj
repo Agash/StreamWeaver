@@ -21,6 +21,10 @@
     <!-- Application Title - Used by Velopack -->
     <ApplicationTitle>StreamWeaver</ApplicationTitle>
 	</PropertyGroup>
+  <ItemGroup>
+    <Content Remove="Assets\twitch.svg" />
+    <Content Remove="Assets\youtube.svg" />
+  </ItemGroup>
   
     <ItemGroup>
       <None Remove="Assets\Badges\youtube_moderator.svg" />
@@ -46,6 +50,9 @@
 		<Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
 		<Content Include="Assets\StoreLogo.png" />
 		<Content Include="Assets\Wide310x150Logo.scale-200.png" />
+		<Content Include="Web\Overlay\src\assets\icons\youtube_moderator.svg" />
+		<Content Include="Web\Overlay\src\assets\icons\youtube_owner.svg" />
+		<Content Include="Web\Overlay\src\assets\icons\youtube_verified.svg" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -62,25 +69,15 @@
 	</ItemGroup>
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
-		<PackageReference Include="Agash.TTSTextNormalization" Version="0.2.1" />
-
-    <!--
-		<PackageReference Include="Agash.YTLiveChat" Version="2.0.1" />
-    -->
-    
+		<PackageReference Include="Agash.YTLiveChat" Version="2.1.1" />   
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-
 		<PackageReference Include="CommunityToolkit.WinUI.Animations" Version="8.2.250402" />
-
 		<PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.250402" />
-
 		<PackageReference Include="CommunityToolkit.WinUI.Converters" Version="8.2.250402" />
-
 		<PackageReference Include="CommunityToolkit.WinUI.Extensions" Version="8.2.250402" />
-
 		<PackageReference Include="CommunityToolkit.WinUI.Helpers" Version="8.2.250402" />
 		<PackageReference Include="Google.Apis.Auth" Version="1.69.0" />
-		<PackageReference Include="Google.Apis.YouTube.v3" Version="1.69.0.3742" />
+		<PackageReference Include="Google.Apis.YouTube.v3" Version="1.69.0.3764" />
 		<PackageReference Include="KokoroSharp" Version="0.5.6" />
 		<PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.4" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.4" />
@@ -91,8 +88,9 @@
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.4" />
 		<PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.4" />
 		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.4" />
-		<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
+		<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.3916" />
 		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250401001" />
+		<PackageReference Include="ObsWebSocket.Core" Version="0.1.5" />
 		<PackageReference Include="SocketIOClient" Version="3.1.2" />
 		<PackageReference Include="System.Speech" Version="9.0.4" />
 		<PackageReference Include="TwitchLib.Api" Version="3.9.0" />
@@ -102,21 +100,32 @@
 	<ItemGroup>
 	  <Folder Include="UI\Templates\" />
 	</ItemGroup>
-  
-  <!-- Define the switch (optional: set default to true for local dev) -->
+
+  <!-- Define local YTLivechat switch (optional: set default to true for local dev) -->
   <PropertyGroup>
     <UseLocalYTLiveChat Condition="'$(UseLocalYTLiveChat)' == ''">true</UseLocalYTLiveChat>
   </PropertyGroup>
 
   <!-- Conditional inclusion of ProjectReference or PackageReference -->
-  <ItemGroup Condition="'$(UseLocalYTLiveChat)' == 'true'">
-    <ProjectReference Include="..\YTLiveChat\YTLiveChat\YTLiveChat.csproj" />
-  </ItemGroup>
 
   <ItemGroup Condition="'$(UseLocalYTLiveChat)' != 'true'">
     <PackageReference Include="Agash.YTLiveChat" Version="*" />
   </ItemGroup>
-  
+
+  <!-- Define local TTSTextNormalization switch (optional: set default to true for local dev) -->
+  <PropertyGroup>
+    <UseLocalYTLiveChat Condition="'$(UseLocalTTSTextNormalization)' == ''">true</UseLocalYTLiveChat>
+  </PropertyGroup>
+
+  <!-- Conditional inclusion of ProjectReference or PackageReference -->
+  <ItemGroup Condition="'$(UseLocalTTSTextNormalization)' == 'true'">
+    <ProjectReference Include="..\TTSTextNormalization\TTSTextNormalization\TTSTextNormalization.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseLocalTTSTextNormalization)' != 'true'">
+    <PackageReference Include="Agash.TTSTextNormalization" Version="*" />
+  </ItemGroup>
+
 	<ItemGroup>
 	  <Page Update="UI\Views\SettingsPages\CredentialsSettingsPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
@@ -142,29 +151,6 @@
 	  <Page Update="UI\Dialogs\CreatePollDialog.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </Page>
-	  <None Update="Web\Overlay\chat.css">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </None>
-	  <None Update="Web\Overlay\chat.html">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </None>
-	  <None Update="Web\Overlay\chat.js">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </None>
-	  <None Update="Web\Overlay\common.js">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </None>
-	  <None Update="Web\Overlay\subtimer.css">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </None>
-	  <None Update="Web\Overlay\subtimer.html">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </None>
-	  <None Update="Web\Overlay\subtimer.js">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </None>
-	</ItemGroup>
-	<ItemGroup>
 	  <Page Update="UI\Views\MainChatView.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </Page>
@@ -175,6 +161,20 @@
 	    <Generator>MSBuild:Compile</Generator>
 	  </Page>
 	</ItemGroup>
+
+  <!-- Build React App before .NET build -->
+  <Target Name="BuildReactApp" BeforeTargets="Build" Condition="'$(Configuration)' != 'Debug'">
+    <Message Importance="high" Text="Building React app in Web/Overlay..." />
+    <Exec WorkingDirectory="Web\Overlay" Command="npm ci" />
+    <Exec WorkingDirectory="Web\Overlay" Command="npm run build" />
+  </Target>
+
+  <!-- Ensure dist is copied to output -->
+  <ItemGroup>
+    <None Update="Web\Overlay\dist\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 
   <!-- Publish Properties -->
   <PropertyGroup>

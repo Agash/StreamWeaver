@@ -1,5 +1,5 @@
 ﻿using System.Net.WebSockets;
-using System.Reflection;
+using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -8,19 +8,21 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using StreamWeaver.Core.Plugins;
 using StreamWeaver.Core.Services.Settings;
 
 namespace StreamWeaver.Core.Services.Web;
 
 /// <summary>
-/// Manages the embedded Kestrel web server for serving overlay files and handling WebSocket connections.
+/// Manages the embedded Kestrel web server for serving overlay files (React app + Plugins)
+/// and handling WebSocket connections.
 /// </summary>
 public partial class WebServerService(
     ILogger<WebServerService> logger,
     IServiceProvider serviceProvider,
     ISettingsService settingsService,
     WebSocketManager webSocketManager
-) : IDisposable
+    ) : IDisposable
 {
     private readonly ILogger<WebServerService> _logger = logger;
     private readonly IServiceProvider _serviceProvider = serviceProvider;
@@ -28,14 +30,20 @@ public partial class WebServerService(
     private readonly WebSocketManager _webSocketManager = webSocketManager;
     private WebApplication? _webApp;
     private CancellationTokenSource? _cts;
-    private string _webRootPath = string.Empty;
+    private string _reactAppDistPath = string.Empty; // Path to React build output
+    private string _pluginsWebPath = string.Empty; // Path to Web Plugins directory
+    private List<WebPluginManifest> _discoveredWebPlugins = []; // Store discovered plugins
     private bool _isDisposed;
 
-    /// <summary>
-    /// Starts the web server asynchronously.
-    /// Configures Kestrel, logging, services, and the request pipeline.
-    /// </summary>
-    /// <returns>A task representing the asynchronous operation.</returns>
+    // Property to expose discovered plugins (used by WebSocketManager)
+    public IEnumerable<WebPluginManifest> DiscoveredWebPlugins => _discoveredWebPlugins;
+
+    private static readonly JsonSerializerOptions s_manifestSerializerOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        AllowTrailingCommas = true // Allow trailing commas in manifest.json
+    };
+
     public async Task StartAsync()
     {
         if (_webApp != null)
@@ -48,68 +56,97 @@ public partial class WebServerService(
         Models.Settings.AppSettings settings = await _settingsService.LoadSettingsAsync();
         int port = settings.Overlays.WebServerPort;
 
-        _webRootPath = GetWebRootPath();
-        if (string.IsNullOrEmpty(_webRootPath) || !Directory.Exists(_webRootPath))
+        // --- Determine Paths ---
+        DetermineWebPaths(); // Find React app dist and Web Plugins paths
+
+        if (string.IsNullOrEmpty(_reactAppDistPath) || !Directory.Exists(_reactAppDistPath))
         {
-            _logger.LogCritical("Web root directory not found at '{WebRootPath}'. Overlays will not work.", _webRootPath);
+            _logger.LogCritical("React app distribution directory not found at '{ReactAppDistPath}'. Overlays will not work.", _reactAppDistPath);
             _cts.Dispose();
             _cts = null;
-            return;
+            return; // Cannot start without the main overlay app
         }
 
-        _logger.LogInformation("Using web root path: {WebRootPath}", _webRootPath);
+        // --- Discover Web Plugins ---
+        _discoveredWebPlugins = DiscoverWebPlugins();
+
         _logger.LogInformation("Starting web server on port {Port}...", port);
+        _logger.LogInformation("Serving React App from: {ReactAppDistPath}", _reactAppDistPath);
+        _logger.LogInformation("Serving Web Plugins from base: {PluginsWebPath}", _pluginsWebPath);
+        _logger.LogInformation("Discovered {PluginCount} valid web plugins.", _discoveredWebPlugins.Count);
 
         try
         {
             WebApplicationBuilder builder = WebApplication.CreateBuilder();
-
             builder.WebHost.UseKestrel(options =>
             {
                 options.ListenLocalhost(port);
                 _logger.LogInformation("Kestrel configured to listen on http://localhost:{Port}", port);
             });
 
+            // Minimal logging for Kestrel itself
             builder.Logging.ClearProviders();
 #if DEBUG
             builder.Logging.AddDebug();
 #endif
+            builder.Logging.SetMinimumLevel(LogLevel.Warning); // Reduce Kestrel noise
+
+            // Register services needed by WebSocketManager or potentially other middleware
             builder.Services.AddSingleton(_webSocketManager);
             builder.Services.AddSingleton(_settingsService);
+            builder.Services.AddSingleton(this); // Make WebServerService itself available if needed
 
             _webApp = builder.Build();
+
+            // --- Configure Middleware ---
             _webApp.UseWebSockets();
-            _webApp.Map(
-                "/ws",
-                async context =>
+
+            // WebSocket Endpoint
+            _webApp.Map("/ws", HandleWebSocketConnection);
+
+            // Serve Static Files for the main React App (from /Web/Overlay/dist)
+            var reactAppProvider = new PhysicalFileProvider(_reactAppDistPath);
+            _webApp.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = reactAppProvider,
+                RequestPath = "" // Serve from root
+            });
+            _logger.LogInformation("Configured static files for React app from {Path}", _reactAppDistPath);
+
+            // Serve Static Files for each discovered Web Plugin
+            foreach (WebPluginManifest plugin in _discoveredWebPlugins)
+            {
+                if (!string.IsNullOrEmpty(plugin.DirectoryPath) && !string.IsNullOrEmpty(plugin.BasePath))
                 {
-                    if (context.WebSockets.IsWebSocketRequest)
+                    var pluginProvider = new PhysicalFileProvider(plugin.DirectoryPath);
+                    _webApp.UseStaticFiles(new StaticFileOptions
                     {
-                        _logger.LogInformation("WebSocket connection request received from {RemoteIpAddress}.", context.Connection.RemoteIpAddress);
-                        using WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                        await _webSocketManager.HandleNewSocketAsync(webSocket, _cts.Token);
-                    }
-                    else
-                    {
-                        _logger.LogWarning(
-                            "Non-WebSocket request received at /ws endpoint from {RemoteIpAddress}.",
-                            context.Connection.RemoteIpAddress
-                        );
-                        context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                    }
+                        FileProvider = pluginProvider,
+                        RequestPath = plugin.BasePath // Serve under /plugins/{pluginId}
+                    });
+                    _logger.LogInformation("Configured static files for plugin '{PluginName}' from {Path} at '{BasePath}'",
+                        plugin.Name, plugin.DirectoryPath, plugin.BasePath);
                 }
-            );
+            }
 
-            PhysicalFileProvider fileProvider = new(_webRootPath);
-            _webApp.UseStaticFiles(new StaticFileOptions { FileProvider = fileProvider, RequestPath = "" });
-            _logger.LogInformation("Static file serving enabled from {WebRootPath}", _webRootPath);
+            // --- Fallback Routing for SPA ---
+            // Serve index.html for the root and common overlay paths to support client-side routing
+            string indexPath = Path.Combine(_reactAppDistPath, "index.html");
+            if (File.Exists(indexPath))
+            {
+                _webApp.MapGet("/", () => Results.File(indexPath, "text/html"));
+                _webApp.MapGet("/chat", () => Results.File(indexPath, "text/html"));
+                _webApp.MapGet("/subtimer", () => Results.File(indexPath, "text/html"));
+                // Add other anticipated overlay routes here if needed
+                _logger.LogInformation("Mapped SPA routes to serve index.html from {Path}", indexPath);
+            }
+            else
+            {
+                _logger.LogError("React app index.html not found at {Path}. SPA routing will fail.", indexPath);
+                _webApp.MapGet("/", () => Results.NotFound("Overlay index.html not found."));
+            }
 
-            MapOverlayFile(_webApp, "/chat", "chat.html");
-            MapOverlayFile(_webApp, "/subtimer", "subtimer.html");
-
-            _webApp.MapGet("/", () => Results.Redirect("/chat"));
             _logger.LogInformation("ASP.NET Core pipeline configured.");
-
             await _webApp.RunAsync(_cts.Token);
             _logger.LogInformation("Web host gracefully shut down.");
         }
@@ -119,26 +156,18 @@ public partial class WebServerService(
         }
         catch (IOException ioEx) when (ioEx.Message.Contains("address already in use", StringComparison.OrdinalIgnoreCase))
         {
-            _logger.LogCritical(
-                ioEx,
-                "FATAL ERROR - Port {Port} is already in use. Please change the port in settings or close the conflicting application.",
-                port
-            );
-
-            if (_webApp != null)
-                await _webApp.DisposeAsync();
+            _logger.LogCritical(ioEx, "FATAL ERROR - Port {Port} is already in use. Please change the port in settings or close the conflicting application.", port);
+            // Clean up partially started app if necessary
+            if (_webApp != null) await _webApp.DisposeAsync();
             _webApp = null;
-            _cts?.Dispose();
-            _cts = null;
+            _cts?.Dispose(); _cts = null;
         }
         catch (Exception ex)
         {
             _logger.LogCritical(ex, "FATAL ERROR starting web host.");
-            if (_webApp != null)
-                await _webApp.DisposeAsync();
+            if (_webApp != null) await _webApp.DisposeAsync();
             _webApp = null;
-            _cts?.Dispose();
-            _cts = null;
+            _cts?.Dispose(); _cts = null;
         }
         finally
         {
@@ -146,131 +175,136 @@ public partial class WebServerService(
         }
     }
 
-    /// <summary>
-    /// Determines the absolute path to the 'Web/Overlay' directory, checking packaged and unpackaged locations.
-    /// </summary>
-    /// <returns>The absolute path to the web root, or empty string if not found.</returns>
-    private string GetWebRootPath()
+    private async Task HandleWebSocketConnection(HttpContext context)
     {
-        string path;
+        if (context.WebSockets.IsWebSocketRequest)
+        {
+            _logger.LogInformation("WebSocket connection request received from {RemoteIpAddress}.", context.Connection.RemoteIpAddress);
+            using WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
+            // Pass discovered plugins to the manager when handling the connection
+            await _webSocketManager.HandleNewSocketAsync(webSocket, _discoveredWebPlugins, _cts?.Token ?? CancellationToken.None);
+        }
+        else
+        {
+            _logger.LogWarning("Non-WebSocket request received at /ws endpoint from {RemoteIpAddress}.", context.Connection.RemoteIpAddress);
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        }
+    }
 
-        // Check for Packaged App Scenario (MSIX)
+    private void DetermineWebPaths()
+    {
+        string baseDirectory = AppContext.BaseDirectory;
+        // Attempt 1: Relative to Base Directory (Unpackaged Dev/Publish)
+        _reactAppDistPath = Path.GetFullPath(Path.Combine(baseDirectory, "Web", "Overlay", "dist"));
+        _pluginsWebPath = Path.GetFullPath(Path.Combine(baseDirectory, "Plugins", "Web"));
+
+        _logger.LogDebug("Checking paths relative to Base Directory: {BaseDir}", baseDirectory);
+        _logger.LogDebug("-> React Dist Path: {ReactPath}", _reactAppDistPath);
+        _logger.LogDebug("-> Web Plugins Path: {PluginsPath}", _pluginsWebPath);
+
+        // TODO: Add checks for Packaged App mode if needed, adjusting paths accordingly.
+        // This might involve checking Windows.ApplicationModel.Package.Current.InstalledLocation.Path
+        // Currently assuming unpackaged or structure relative to BaseDirectory.
+        if (!Directory.Exists(_reactAppDistPath))
+        {
+            _logger.LogWarning("React 'dist' directory NOT found at primary location: {Path}", _reactAppDistPath);
+            // Consider adding more fallback checks if necessary (e.g., relative to assembly)
+        }
+
+        if (!Directory.Exists(_pluginsWebPath))
+        {
+            _logger.LogInformation("Web Plugins directory does not exist at: {Path}. No web plugins will be loaded.", _pluginsWebPath);
+            // Attempt to create it? Or just log? For now, just log.
+            try { Directory.CreateDirectory(_pluginsWebPath); } catch (Exception ex) { _logger.LogWarning(ex, "Failed to create Web Plugins directory."); }
+        }
+    }
+
+    private List<WebPluginManifest> DiscoverWebPlugins()
+    {
+        var discovered = new List<WebPluginManifest>();
+        if (string.IsNullOrEmpty(_pluginsWebPath) || !Directory.Exists(_pluginsWebPath))
+        {
+            _logger.LogInformation("Skipping web plugin discovery - directory path is invalid or not found.");
+            return discovered;
+        }
+
+        _logger.LogInformation("Discovering web plugins in: {PluginsWebPath}", _pluginsWebPath);
         try
         {
-            // Use reflection to avoid hard dependency on Windows SDK types if possible,
-            // though a direct check might be cleaner if the project targets Windows specifically.
-            Type? packageType = Type.GetType("Windows.ApplicationModel.Package, System.Runtime.WindowsRuntime");
-            if (packageType != null)
+            foreach (string subDir in Directory.GetDirectories(_pluginsWebPath))
             {
-                object? currentPackage = packageType.GetProperty("Current")?.GetValue(null);
-                if (currentPackage != null)
+                string manifestPath = Path.Combine(subDir, "manifest.json");
+                if (!File.Exists(manifestPath))
                 {
-                    dynamic? installedLocation = packageType.GetProperty("InstalledLocation")?.GetValue(currentPackage);
-                    if (installedLocation != null)
-                    {
-                        string installPath = installedLocation.Path;
-                        path = Path.Combine(installPath, "Web", "Overlay");
-                        _logger.LogDebug("Detected packaged app mode. Install path: {InstallPath}", installPath);
-                        if (Directory.Exists(path))
-                        {
-                            _logger.LogDebug("Found web root in packaged location: {Path}", path);
-                            return path;
-                        }
+                    _logger.LogTrace("Skipping directory '{DirName}': manifest.json not found.", Path.GetFileName(subDir));
+                    continue;
+                }
 
-                        _logger.LogWarning("Packaged app overlay path not found: {Path}. Trying alternative locations.", path);
+                _logger.LogDebug("Found manifest: {ManifestPath}", manifestPath);
+                try
+                {
+                    string manifestJson = File.ReadAllText(manifestPath);
+                    WebPluginManifest? manifest = JsonSerializer.Deserialize<WebPluginManifest>(manifestJson, s_manifestSerializerOptions);
+
+                    if (manifest != null && ValidateWebManifest(manifest, manifestPath))
+                    {
+                        manifest.DirectoryPath = subDir; // Store physical path
+                        manifest.BasePath = $"/plugins/{manifest.Id}/"; // Calculate URL base path
+                        discovered.Add(manifest);
+                        _logger.LogInformation("Successfully loaded web plugin: {PluginName} (v{PluginVersion}) from {DirName}",
+                            manifest.Name, manifest.Version, Path.GetFileName(subDir));
                     }
+                }
+                catch (JsonException jsonEx)
+                {
+                    _logger.LogError(jsonEx, "Error parsing manifest JSON {ManifestPath}", manifestPath);
+                }
+                catch (IOException ioEx)
+                {
+                    _logger.LogError(ioEx, "Error reading manifest file {ManifestPath}", manifestPath);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Unexpected error processing web plugin manifest {ManifestPath}", manifestPath);
                 }
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Error checking for packaged app mode. This might be normal in unpackaged scenarios.");
+            _logger.LogError(ex, "Error enumerating web plugin directories in {PluginsWebPath}", _pluginsWebPath);
         }
 
-        // Check Unpackaged Scenario (Relative to Base Directory)
-        string baseDirectory = AppContext.BaseDirectory;
-        path = Path.Combine(baseDirectory, "Web", "Overlay");
-        _logger.LogDebug("Checking unpackaged location relative to base directory: {BaseDirectory}", baseDirectory);
-        if (Directory.Exists(path))
-        {
-            _logger.LogDebug("Found web root in unpackaged base directory location: {Path}", path);
-            return path;
-        }
-
-        // Check Unpackaged Scenario (Relative to Executing Assembly) - Fallback
-        _logger.LogWarning("Unpackaged overlay path not found relative to base directory: {Path}. Trying execution assembly directory.", path);
-        string? assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        if (!string.IsNullOrEmpty(assemblyDir))
-        {
-            path = Path.Combine(assemblyDir, "Web", "Overlay");
-            _logger.LogDebug("Checking unpackaged location relative to assembly directory: {AssemblyDirectory}", assemblyDir);
-            if (Directory.Exists(path))
-            {
-                _logger.LogDebug("Found web root in unpackaged assembly directory location: {Path}", path);
-                return path;
-            }
-
-            _logger.LogWarning("Unpackaged overlay path not found relative to assembly directory: {Path}", path);
-        }
-
-        // If none found
-        _logger.LogError("Web root directory 'Web/Overlay' could not be found in standard packaged or unpackaged locations.");
-        return string.Empty;
+        return discovered;
     }
 
-    /// <summary>
-    /// Maps a specific route to an HTML overlay file.
-    /// </summary>
-    /// <param name="app">The application's endpoint route builder.</param>
-    /// <param name="route">The URL path (e.g., "/chat").</param>
-    /// <param name="fileName">The corresponding HTML file name (e.g., "chat.html").</param>
-    private void MapOverlayFile(IEndpointRouteBuilder app, string route, string fileName)
+    private bool ValidateWebManifest(WebPluginManifest manifest, string manifestPath)
     {
-        string filePath = Path.Combine(_webRootPath, fileName);
-        if (File.Exists(filePath))
+        bool isValid = true;
+        if (string.IsNullOrWhiteSpace(manifest.Id))
         {
-            app.MapGet(
-                route,
-                async context =>
-                {
-                    context.Response.ContentType = GetContentType(fileName);
-                    await Results.File(filePath, contentType: context.Response.ContentType).ExecuteAsync(context);
-                }
-            );
-            _logger.LogInformation("Mapped route '{Route}' to file '{FilePath}'", route, filePath);
+            _logger.LogError("Invalid manifest {ManifestPath}: 'id' is missing or empty.", manifestPath);
+            isValid = false;
         }
-        else
+        if (string.IsNullOrWhiteSpace(manifest.Name))
         {
-            _logger.LogWarning("Overlay file not found for route '{Route}'. Expected at: {FilePath}", route, filePath);
-            app.MapGet(route, () => Results.NotFound($"Overlay file '{fileName}' not found."));
+            _logger.LogError("Invalid manifest {ManifestPath}: 'name' is missing or empty.", manifestPath);
+            isValid = false;
         }
+        if (string.IsNullOrWhiteSpace(manifest.Version) || !Version.TryParse(manifest.Version, out _))
+        {
+            _logger.LogError("Invalid manifest {ManifestPath}: 'version' is missing or not a valid format.", manifestPath);
+            isValid = false;
+        }
+        if (string.IsNullOrWhiteSpace(manifest.EntryScript))
+        {
+            _logger.LogError("Invalid manifest {ManifestPath}: 'entryScript' is missing or empty.", manifestPath);
+            isValid = false;
+        }
+        // Optional fields don't need validation here unless they have format requirements
+
+        return isValid;
     }
 
-    /// <summary>
-    /// Determines the MIME content type based on file extension.
-    /// </summary>
-    /// <param name="path">The file path or name.</param>
-    /// <returns>The corresponding MIME content type string.</returns>
-    private static string GetContentType(string path) =>
-        Path.GetExtension(path).ToLowerInvariant() switch
-        {
-            ".html" or ".htm" => "text/html",
-            ".css" => "text/css",
-            ".js" => "application/javascript",
-            ".png" => "image/png",
-            ".jpg" or ".jpeg" => "image/jpeg",
-            ".gif" => "image/gif",
-            ".svg" => "image/svg+xml",
-            ".webp" => "image/webp",
-            ".woff2" => "font/woff2",
-            ".woff" => "font/woff",
-            _ => "application/octet-stream",
-        };
-
-    /// <summary>
-    /// Stops the web server asynchronously.
-    /// </summary>
-    /// <returns>A task representing the asynchronous operation.</returns>
     public async Task StopAsync()
     {
         _logger.LogInformation("Stopping web server...");
@@ -286,66 +320,30 @@ public partial class WebServerService(
             {
                 _cts.Cancel();
             }
-
+            // Allow some time for graceful shutdown
             await _webApp.StopAsync(TimeSpan.FromSeconds(5));
         }
-        catch (ObjectDisposedException)
-        {
-            _logger.LogDebug("StopAsync ignored ObjectDisposedException (likely CTS already disposed).");
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogInformation("StopAsync cancellation occurred during web host stop.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error occurred during StopAsync.");
-        }
-        finally
-        {
-            _logger.LogInformation("StopAsync request processed.");
-        }
+        catch (ObjectDisposedException) { _logger.LogDebug("StopAsync ignored ObjectDisposedException (likely CTS already disposed)."); }
+        catch (OperationCanceledException) { _logger.LogInformation("StopAsync cancellation occurred during web host stop."); }
+        catch (Exception ex) { _logger.LogError(ex, "Error occurred during StopAsync."); }
+        finally { _logger.LogInformation("StopAsync request processed."); }
     }
 
-    /// <summary>
-    /// Disposes resources used by the WebServerService.
-    /// Consider implementing IAsyncDisposable for proper async cleanup.
-    /// </summary>
-    public async void Dispose() // Note: async void is discouraged; implement IAsyncDisposable instead.
+    public async void Dispose()
     {
-        if (_isDisposed)
-            return;
+        if (_isDisposed) return;
         _isDisposed = true;
-
         _logger.LogInformation("Dispose called.");
-        // Ensure stop is requested and awaited (best effort within sync Dispose limitations)
-        // Using .Wait() or .Result here can lead to deadlocks in some contexts.
-        // This highlights why IAsyncDisposable is preferred.
-        try
-        {
-            await StopAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Exception during StopAsync call within Dispose. Cleanup might be incomplete.");
-        }
+
+        // Initiate stop but don't block indefinitely in Dispose
+        try { await StopAsync(); } catch (Exception ex) { _logger.LogError(ex, "Exception during StopAsync call within Dispose."); }
 
         _cts?.Dispose();
-
         if (_webApp != null)
         {
-            try
-            {
-                await _webApp.DisposeAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Exception disposing WebApplication within Dispose.");
-            }
-
+            try { await _webApp.DisposeAsync(); } catch (Exception ex) { _logger.LogError(ex, "Exception disposing WebApplication within Dispose."); }
             _webApp = null;
         }
-
         _logger.LogInformation("Dispose finished.");
         GC.SuppressFinalize(this);
     }

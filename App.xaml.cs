@@ -37,6 +37,10 @@ public partial class App : Application
     private static IServiceProvider? s_serviceProvider;
     private static ILogger<App>? s_logger;
 
+    private static PluginService? s_pluginServiceInstance;
+    private static IConfigurationRoot? s_configurationRoot;
+    private static List<Type> s_discoveredPluginTypes = [];
+
     // Velopack Update State
     private static UpdateManager? s_updateManager;
     private static UpdateInfo? s_pendingUpdateInfo;
@@ -47,13 +51,20 @@ public partial class App : Application
     public App()
     {
 #if !DEBUG
-        VelopackApp.Build()
-            .OnFirstRun((v) => { /* First run logic here */ })
+        VelopackApp
+            .Build()
+            .OnFirstRun(
+                (
+                    v
+                ) => { /* First run logic here */
+                }
+            )
             .Run();
 #endif
         Services = ConfigureServices();
         s_serviceProvider = Services;
         s_logger = Services.GetRequiredService<ILogger<App>>();
+        s_pluginServiceInstance = Services.GetRequiredService<PluginService>();
         InitializeComponent();
 
 #if !DEBUG
@@ -82,6 +93,22 @@ public partial class App : Application
                 ?? throw new InvalidOperationException("Cannot get DispatcherQueue on non-UI thread during service configuration.")
         );
 
+        // --- Configuration Setup ---
+        string appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        string appFolder = Path.Combine(appDataFolder, "StreamWeaver");
+        Directory.CreateDirectory(appFolder);
+        string userSettingsPath = Path.Combine(appFolder, "user_settings.json");
+
+        IConfigurationBuilder configBuilder = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+            .AddJsonFile(userSettingsPath, optional: true, reloadOnChange: true)
+            .AddEnvironmentVariables();
+
+        s_configurationRoot = configBuilder.Build();
+        services.AddSingleton<IConfiguration>(s_configurationRoot);
+        services.AddSingleton(s_configurationRoot);
+
         services.AddLogging(builder =>
         {
             builder.AddConsole();
@@ -103,6 +130,15 @@ public partial class App : Application
 
         services.AddSingleton<LogViewerService>();
 
+        // --- PLUGIN SERVICE - DISCOVERY & REGISTRATION PHASE ---
+        // The PluginService itself is a singleton.
+        services.AddSingleton<PluginService>();
+
+        string pluginsPath = Path.Combine(AppContext.BaseDirectory, "Plugins");
+        // The static method populates 'services' with plugin types and their options configurations.
+        // It returns the list of discovered plugin types.
+        s_discoveredPluginTypes = PluginService.DiscoverAndRegisterPlugins(pluginsPath, services, s_configurationRoot);
+
         // --- TTS Text Normalization Configuration ---
         services.Configure<AbbreviationRuleOptions>(options =>
         {
@@ -110,9 +146,14 @@ public partial class App : Application
             // options.CustomAbbreviations = customMap.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
             // options.ReplaceDefaultAbbreviations = false; // Merge with defaults
         });
-        services.Configure<UrlRuleOptions>(options => { options.PlaceholderText = " link "; });
-        services.Configure<EmojiRuleOptions>(options => { options.Suffix = " emoji"; }); // e.g., "thumbs up emoji"
-
+        services.Configure<UrlRuleOptions>(options =>
+        {
+            options.PlaceholderText = " link ";
+        });
+        services.Configure<EmojiRuleOptions>(options =>
+        {
+            options.Suffix = " emoji";
+        }); // e.g., "thumbs up emoji"
 
         // Add the normalization pipeline with desired rules and order
         services.AddTextNormalization(builder =>
@@ -152,7 +193,8 @@ public partial class App : Application
             options.RequestFrequency = 1000; // 1 second
             options.DebugLogReceivedJsonItems = true;
         });
-        services.AddYTLiveChat();
+
+        services.AddYTLiveChat(s_configurationRoot.GetSection("ytlivechat"));
 
         // TTS Services
         services.AddSingleton<TtsFormattingService>(); // Register the formatting service
@@ -176,21 +218,18 @@ public partial class App : Application
         services.AddSingleton<WebSocketManager>();
         services.AddSingleton<WebServerService>();
 
-        // Plugin System
-        services.AddSingleton<PluginService>();
-
         // UI ViewModels
         services.AddSingleton<MainChatViewModel>();
         services.AddTransient<MainWindowViewModel>();
         services.AddTransient<SettingsViewModel>();
-        services.AddTransient<ConnectAccountViewModel>();
+        // services.AddTransient<ConnectAccountViewModel>();
         services.AddSingleton<LogsViewModel>();
 
         // Modules
         services.AddSingleton<SubathonService>();
         services.AddSingleton<GoalService>();
 
-        return services.BuildServiceProvider();
+        return services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
     }
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
@@ -236,12 +275,25 @@ public partial class App : Application
             s_logger?.LogDebug("UnifiedEventService initialized.");
 
             s_logger?.LogDebug("Initializing PluginService...");
-            PluginService pluginService = Services.GetRequiredService<PluginService>();
-            string baseDirectory = AppContext.BaseDirectory;
-            string pluginsPath = Path.Combine(baseDirectory, "Plugins");
-            s_logger?.LogDebug("Determined Plugins directory path: {pluginsPath}", pluginsPath);
-            await pluginService.LoadPluginsAsync(pluginsPath);
-            s_logger?.LogDebug("PluginService initialization complete.");
+            // --- PLUGIN SERVICE - INITIALIZATION PHASE ---
+            // s_pluginServiceInstance was resolved in the App constructor.
+            // s_discoveredPluginTypes was populated by the static method in ConfigureServices.
+            if (s_pluginServiceInstance != null && s_configurationRoot != null && s_discoveredPluginTypes != null)
+            {
+                s_logger?.LogDebug(
+                    "Initializing loaded plugins via singleton PluginService (with {TypeCount} discovered types)...",
+                    s_discoveredPluginTypes.Count
+                );
+                await s_pluginServiceInstance.InitializeLoadedPluginsAsync(s_discoveredPluginTypes, s_configurationRoot);
+                s_logger?.LogInformation(
+                    "PluginService InitializeLoadedPluginsAsync complete. {LoadedCount} plugins loaded.",
+                    s_pluginServiceInstance.LoadedPlugins.Count
+                );
+            }
+            else
+            {
+                s_logger?.LogError("Cannot initialize plugins: PluginService instance, ConfigurationRoot, or DiscoveredPluginTypes list is null.");
+            }
         }
         catch (Exception ex)
         {
@@ -269,7 +321,8 @@ public partial class App : Application
 
     private static async Task CheckForUpdatesInBackgroundAsync(TimeSpan? delay = null)
     {
-        if (s_logger == null) return;
+        if (s_logger == null)
+            return;
 
         if (delay.HasValue)
         {
@@ -302,13 +355,17 @@ public partial class App : Application
                 return;
             }
 
-            s_logger.LogInformation("Update found: v{Version}. Current version: v{CurrentVersion}",
-                updateInfo.TargetFullRelease.Version, s_updateManager.CurrentVersion);
+            s_logger.LogInformation(
+                "Update found: v{Version}. Current version: v{CurrentVersion}",
+                updateInfo.TargetFullRelease.Version,
+                s_updateManager.CurrentVersion
+            );
 
             lock (s_updateLock)
             {
                 // Double-check inside lock in case another check completed concurrently
-                if (s_updateDownloadInitiated || s_updateAppliedOrDeferred) return;
+                if (s_updateDownloadInitiated || s_updateAppliedOrDeferred)
+                    return;
 
                 s_pendingUpdateInfo = updateInfo;
                 s_updateDownloadInitiated = true; // Mark that we are STARTING the download process
@@ -318,7 +375,6 @@ public partial class App : Application
 
             // Start download in a truly background thread
             _ = Task.Run(() => DownloadUpdateAsync(updateInfo));
-
         }
 #if DEBUG
         catch (NotInstalledException ex)
@@ -346,7 +402,8 @@ public partial class App : Application
     // Runs in a background thread (called via Task.Run)
     private static async Task DownloadUpdateAsync(UpdateInfo updateInfo)
     {
-        if (s_updateManager == null) return; // Should not happen if check succeeded, but safety first
+        if (s_updateManager == null)
+            return; // Should not happen if check succeeded, but safety first
 
         try
         {
@@ -409,16 +466,16 @@ public partial class App : Application
                     ContentDialog errorDialog = new()
                     {
                         Title = "Update Download Failed",
-                        Content = $"Could not download the latest update. Please check your internet connection or logs for details.\nError: {ex.Message}",
+                        Content =
+                            $"Could not download the latest update. Please check your internet connection or logs for details.\nError: {ex.Message}",
                         CloseButtonText = "OK",
-                        XamlRoot = MainWindow.Content.XamlRoot
+                        XamlRoot = MainWindow.Content.XamlRoot,
                     };
                     await errorDialog.ShowAsync();
                 });
             }
         }
     }
-
 
     // Runs EXCLUSIVELY on the UI thread (called via DispatcherQueue.TryEnqueue)
     private static async Task ShowUpdatePromptAsync(UpdateInfo updateInfo)
@@ -448,7 +505,6 @@ public partial class App : Application
             }
         }
 
-
         s_logger?.LogInformation("Showing update prompt to user.");
 
         ContentDialog updateDialog = new()
@@ -458,7 +514,7 @@ public partial class App : Application
             PrimaryButtonText = "Install Now & Restart",
             SecondaryButtonText = "Install on Exit",
             DefaultButton = ContentDialogButton.Primary,
-            XamlRoot = MainWindow.Content.XamlRoot
+            XamlRoot = MainWindow.Content.XamlRoot,
         };
 
         ContentDialogResult result = await updateDialog.ShowAsync();
@@ -532,7 +588,7 @@ public partial class App : Application
             Title = title,
             Content = content,
             CloseButtonText = "OK",
-            XamlRoot = MainWindow.Content.XamlRoot
+            XamlRoot = MainWindow.Content.XamlRoot,
         };
         await errorDialog.ShowAsync();
     }
